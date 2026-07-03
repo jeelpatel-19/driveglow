@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriveGlow – Booking Confirmed</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', Arial, sans-serif; background-color: #0A0A0A; color: #F5F5F5; -webkit-font-smoothing: antialiased; }
+    .email-wrap { max-width: 620px; margin: 40px auto; padding: 0 16px 60px; }
+    .email-card { background: #111111; border: 1px solid rgba(198,161,91,0.28); border-radius: 16px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.6); }
+    .email-header { background: linear-gradient(135deg, #0A0A0A 0%, #1a0a10 100%); padding: 40px 40px 32px; text-align: center; border-bottom: 1px solid rgba(198,161,91,0.15); }
+    .email-logo { font-family: Georgia, serif; font-size: 28px; font-weight: 400; letter-spacing: 2px; color: #F5F5F5; margin-bottom: 4px; }
+    .email-logo span { color: #C6A15B; }
+    .email-tagline { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #5a5a5a; margin-bottom: 28px; }
+    .email-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(198,161,91,0.08); border: 1px solid rgba(198,161,91,0.25); border-radius: 100px; padding: 8px 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #C6A15B; }
+    .email-body { padding: 40px; }
+    .greeting { font-family: Georgia, serif; font-size: 22px; font-weight: 400; color: #F5F5F5; margin-bottom: 14px; }
+    .intro { font-size: 14px; font-weight: 300; color: #A8A8A8; line-height: 1.7; margin-bottom: 32px; }
+    .booking-id-block { background: rgba(198,161,91,0.05); border: 1px solid rgba(198,161,91,0.2); border-radius: 10px; padding: 18px 22px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; }
+    .booking-id-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #5a5a5a; font-weight: 600; }
+    .booking-id-value { font-family: Georgia, serif; font-size: 20px; color: #C6A15B; font-weight: 400; letter-spacing: 1px; }
+    .section-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #C6A15B; font-weight: 700; margin-bottom: 14px; margin-top: 28px; }
+    .details-table { width: 100%; border-collapse: collapse; }
+    .details-table tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .details-table tr:last-child { border-bottom: none; }
+    .details-table td { padding: 12px 0; font-size: 13px; vertical-align: top; }
+    .details-table .dt-label { color: #5a5a5a; font-weight: 600; letter-spacing: 0.04em; width: 42%; }
+    .details-table .dt-value { color: #F5F5F5; font-weight: 400; text-align: right; }
+    .price-total { background: #141414; border: 1px solid rgba(198,161,91,0.25); border-radius: 10px; padding: 20px 22px; margin-top: 28px; display: flex; justify-content: space-between; align-items: center; }
+    .price-total-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #A8A8A8; }
+    .price-total-value { font-family: Georgia, serif; font-size: 28px; font-weight: 400; color: #C6A15B; }
+    .status-badge { display: inline-block; background: rgba(60,200,120,0.1); border: 1px solid rgba(60,200,120,0.3); color: #3cc878; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-top: 4px; }
+    .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 32px 0; }
+    .message-block { font-size: 14px; font-weight: 300; color: #A8A8A8; line-height: 1.75; }
+    .email-footer { background: #0A0A0A; padding: 28px 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
+    .footer-logo { font-family: Georgia, serif; font-size: 16px; color: #F5F5F5; letter-spacing: 1px; margin-bottom: 8px; }
+    .footer-logo span { color: #C6A15B; }
+    .footer-contact { font-size: 12px; color: #5a5a5a; line-height: 1.8; }
+    .footer-contact a { color: #A8A8A8; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="email-wrap">
+  <div class="email-card">
+    <div class="email-header">
+      <div class="email-logo">DRIVE<span>GLOW</span></div>
+      <div class="email-tagline">Premium Automotive Detailing</div>
+      <div class="email-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Booking Confirmed
+      </div>
+    </div>
+
+    <div class="email-body">
+      <p class="greeting">Hello, nisarg</p>
+      <p class="intro">Thank you for choosing DriveGlow. Your booking has been confirmed and our professional detailing team is scheduled for your appointment.</p>
+
+      <div class="booking-id-block">
+        <div>
+          <div class="booking-id-label">Booking Reference</div>
+          <div class="booking-id-value">DG-52915</div>
+        </div>
+        <span class="status-badge">Confirmed</span>
+      </div>
+
+      <div class="section-label">Appointment Details</div>
+      <table class="details-table">
+        <tr><td class="dt-label">Package Selected</td><td class="dt-value">Complete Glow</td></tr>
+        <tr><td class="dt-label">Appointment Date</td><td class="dt-value">Saturday, 11 July 2026</td></tr>
+        <tr><td class="dt-label">Appointment Time</td><td class="dt-value">09:00</td></tr>
+      </table>
+
+      <div class="section-label">Vehicle Details</div>
+      <table class="details-table">
+        <tr><td class="dt-label">Vehicle</td><td class="dt-value">bmw 3</td></tr>
+        <tr><td class="dt-label">Vehicle Type</td><td class="dt-value">Luxury Sedan</td></tr>
+        <tr><td class="dt-label">Registration No.</td><td class="dt-value">GJ-01-JN-2006</td></tr>
+      </table>
+
+      <div class="section-label">Service Address</div>
+      <table class="details-table">
+        <tr><td class="dt-label">Flat / Unit</td><td class="dt-value">A-701</td></tr>
+        <tr><td class="dt-label">Building</td><td class="dt-value">chiloda</td></tr>
+        <tr><td class="dt-label">Street / Area</td><td class="dt-value">chiloda</td></tr>
+        
+        <tr><td class="dt-label">City &amp; State</td><td class="dt-value">Gujrat, Ahmedabad</td></tr>
+        <tr><td class="dt-label">Pincode</td><td class="dt-value">50076</td></tr>
+      </table>
+
+      <div class="section-label">Customer Information</div>
+      <table class="details-table">
+        <tr><td class="dt-label">Mobile Number</td><td class="dt-value">8660094268</td></tr>
+        <tr><td class="dt-label">Email Address</td><td class="dt-value">nishu@gmail.com</td></tr>
+      </table>
+
+      <div class="price-total">
+        <div class="price-total-label">Total Amount</div>
+        <div class="price-total-value">₹4,999</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="message-block">Our professional detailing team will arrive at your selected time, fully equipped and ready to deliver a showroom-quality finish. If you need to reschedule or have any questions, please contact us at least 24 hours before your appointment.</p>
+    </div>
+
+    <div class="email-footer">
+      <div class="footer-logo">DRIVE<span>GLOW</span></div>
+      <div class="footer-contact">
+        <p>support@driveglow.in &nbsp;·&nbsp; <a href="tel:+919876543210">+91 98765 43210</a></p>
+        <p>Mon – Sun &nbsp;·&nbsp; 8 AM – 8 PM</p>
+        <p style="margin-top:8px; font-size:10px; color:#3a3a3a">&copy; 2026 DriveGlow Premium Detailing. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

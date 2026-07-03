@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DriveGlow — Premium automotive detailing. Ceramic coating, paint correction, interior restoration for luxury vehicles. Book your appointment today.">
+  <title>DriveGlow — Premium Automotive Detailing</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       FLOATING NAVIGATION
+  ══════════════════════════════════════════ -->
+  <header class="nav-wrapper" id="site-header">
+    <nav class="nav-inner">
+      <a href="#" class="nav-logo" id="header-logo">
+        <span class="logo-drive">Drive</span><span class="logo-glow">Glow</span>
+      </a>
+
+      <ul class="nav-links" id="main-navigation">
+        <li><a href="#services" class="nav-link">Services</a></li>
+        <li><a href="#booking"  class="nav-link">Book Now</a></li>
+        <li><a href="#reviews"  class="nav-link">Reviews</a></li>
+        <li><a href="#about"    class="nav-link">About</a></li>
+        <li><a href="#contact"  class="nav-link">Contact</a></li>
+        <li><a href="/admin.html" class="nav-link nav-link--admin">Admin</a></li>
+      </ul>
+
+      <a href="#booking" class="nav-cta" id="nav-book-btn">Book Appointment</a>
+
+      <button class="nav-hamburger" id="mobile-menu-toggle" aria-label="Open navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-drawer" id="mobile-drawer">
+    <button class="drawer-close" id="drawer-close-btn" aria-label="Close">&times;</button>
+    <a href="#services" class="drawer-link">Services</a>
+    <a href="#booking"  class="drawer-link">Book Now</a>
+    <a href="#reviews"  class="drawer-link">Reviews</a>
+    <a href="#about"    class="drawer-link">About</a>
+    <a href="#contact"  class="drawer-link">Contact</a>
+    <a href="#booking"  class="drawer-link drawer-cta">Book Appointment</a>
+    <a href="/admin.html" class="drawer-link" style="font-size:14px;opacity:0.5;">Admin Panel</a>
+  </div>
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+
+  <!-- ══════════════════════════════════════════
+       1. HERO SECTION
+  ══════════════════════════════════════════ -->
+  <section class="hero" id="hero-section">
+    <div class="hero-bg-texture"></div>
+    <div class="hero-bg-vignette"></div>
+
+    <div class="hero-layout">
+      <div class="hero-content" id="hero-text">
+        <p class="hero-eyebrow">Est. 2018 · Premium Detailing</p>
+        <h1 class="hero-headline">
+          Where Luxury<br><em>Meets Perfection.</em>
+        </h1>
+        <p class="hero-body">
+          Uncompromising care for vehicles that demand it. From flawless paint correction to long-lasting ceramic coatings — we restore your vehicle to its purest, most radiant state.
+        </p>
+        <div class="hero-actions">
+          <a href="#booking"  class="btn btn--primary" id="hero-cta-book">Book Appointment</a>
+          <a href="#services" class="btn btn--ghost"   id="hero-cta-services">View Packages</a>
+        </div>
+        <div class="hero-trust">
+          <div class="trust-item">
+            <span class="trust-number">1,200+</span>
+            <span class="trust-label">Vehicles Restored</span>
+          </div>
+          <div class="trust-divider"></div>
+          <div class="trust-item">
+            <span class="trust-number">8 Yrs</span>
+            <span class="trust-label">Of Excellence</span>
+          </div>
+          <div class="trust-divider"></div>
+          <div class="trust-item">
+            <span class="trust-number">4.9★</span>
+            <span class="trust-label">Client Rating</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual" id="hero-image">
+        <div class="hero-car-frame">
+          <img
+            src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=90&w=1200"
+            alt="Luxury black sedan in studio lighting"
+            class="hero-car-img"
+          >
+          <div class="hero-car-reflection"></div>
+        </div>
+        <div class="hero-floating-tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Certified Premium Detailing</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-scroll-indicator">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       2. SERVICE PACKAGES
+  ══════════════════════════════════════════ -->
+  <section class="services fade-on-scroll" id="services">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Our Packages</p>
+        <h2 class="section-title">Detailing Services</h2>
+        <p class="section-subtitle">Choose the level of care your vehicle deserves. All packages are delivered by our master detailing technicians at your doorstep.</p>
+      </div>
+
+      <div class="cards-grid">
+
+        <!-- ── Simple Clean ── -->
+        <article class="pkg-card" id="package-simple-clean">
+          <div class="pkg-card__image-wrap">
+            <img
+              src="https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&q=80&w=900"
+              alt="Luxury sedan exterior hand wash"
+              class="pkg-card__image"
+            >
+            <div class="pkg-card__image-overlay"></div>
+          </div>
+          <div class="pkg-card__body">
+            <div class="pkg-card__meta-row">
+              <span class="pkg-tag">Entry</span>
+              <span class="pkg-card__duration">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                2 Hours
+              </span>
+            </div>
+            <h3 class="pkg-card__name">Simple Clean</h3>
+            <p class="pkg-card__desc">A premium exterior and interior maintenance wash for vehicles deserving careful, consistent attention.</p>
+
+            <div class="pkg-features-block">
+              <p class="pkg-features-label">What's Included</p>
+              <ul class="pkg-card__features">
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Exterior Hand Wash
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Wheel Cleaning
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Tire Shine
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Interior Vacuum
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Dashboard Cleaning
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Window Cleaning
+                </li>
+              </ul>
+            </div>
+
+            <div class="pkg-card__footer">
+              <div class="pkg-price-block">
+                <span class="pkg-price-from">Starting at</span>
+                <span class="pkg-card__price">₹999</span>
+              </div>
+              <a href="#booking" class="btn btn--card" data-package="Simple Clean" data-price="999" id="btn-simple-clean">Reserve Now</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── Deep Clean (Featured) ── -->
+        <article class="pkg-card pkg-card--featured" id="package-deep-clean">
+          <div class="pkg-card__ribbon">Most Popular</div>
+          <div class="pkg-card__image-wrap">
+            <img
+              src="https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=900"
+              alt="Professional interior leather detailing"
+              class="pkg-card__image"
+            >
+            <div class="pkg-card__image-overlay"></div>
+          </div>
+          <div class="pkg-card__body">
+            <div class="pkg-card__meta-row">
+              <span class="pkg-tag pkg-tag--gold">Premium</span>
+              <span class="pkg-card__duration">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                4.5 Hours
+              </span>
+            </div>
+            <h3 class="pkg-card__name">Deep Clean</h3>
+            <p class="pkg-card__desc">Full interior restoration and exterior rejuvenation. Our most comprehensive maintenance treatment.</p>
+
+            <div class="pkg-features-block">
+              <p class="pkg-features-label">Everything in Simple Clean, plus:</p>
+              <ul class="pkg-card__features">
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Seat Shampoo
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Carpet Shampoo
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Steam Cleaning
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Leather Conditioning
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Engine Bay Cleaning
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Odor Removal
+                </li>
+              </ul>
+            </div>
+
+            <div class="pkg-card__footer">
+              <div class="pkg-price-block">
+                <span class="pkg-price-from">Starting at</span>
+                <span class="pkg-card__price">₹2,499</span>
+              </div>
+              <a href="#booking" class="btn btn--card" data-package="Deep Clean" data-price="2499" id="btn-deep-clean">Reserve Now</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── Complete Glow ── -->
+        <article class="pkg-card" id="package-complete-glow">
+          <div class="pkg-card__image-wrap">
+            <img
+              src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=900"
+              alt="Luxury vehicle with ceramic coating mirror finish"
+              class="pkg-card__image"
+            >
+            <div class="pkg-card__image-overlay"></div>
+          </div>
+          <div class="pkg-card__body">
+            <div class="pkg-card__meta-row">
+              <span class="pkg-tag pkg-tag--maroon">Flagship</span>
+              <span class="pkg-card__duration">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                8 Hours
+              </span>
+            </div>
+            <h3 class="pkg-card__name">Complete Glow</h3>
+            <p class="pkg-card__desc">Our ultimate restorative experience. Multi-stage paint correction and a 2-year ceramic coating for a true showroom finish.</p>
+
+            <div class="pkg-features-block">
+              <p class="pkg-features-label">Everything in Deep Clean, plus:</p>
+              <ul class="pkg-card__features">
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Paint Polishing
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Ceramic Coating (2-Year)
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  High Gloss Finish
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Premium Wax
+                </li>
+                <li>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Showroom Finish
+                </li>
+              </ul>
+            </div>
+
+            <div class="pkg-card__footer">
+              <div class="pkg-price-block">
+                <span class="pkg-price-from">Starting at</span>
+                <span class="pkg-card__price">₹4,999</span>
+              </div>
+              <a href="#booking" class="btn btn--card" data-package="Complete Glow" data-price="4999" id="btn-complete-glow">Reserve Now</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       3. BOOKING SECTION
+  ══════════════════════════════════════════ -->
+  <section class="booking-section fade-on-scroll" id="booking">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Reserve Your Slot</p>
+        <h2 class="section-title">Schedule a Session</h2>
+        <p class="section-subtitle">Book in minutes. Our technicians arrive precisely on time, fully equipped at your location.</p>
+      </div>
+
+      <div class="booking-layout">
+        <!-- Glass Form -->
+        <div class="booking-glass">
+          <form id="booking-form-element" class="booking-form" novalidate>
+
+            <!-- Step 1: Customer Details -->
+            <fieldset class="form-step">
+              <legend class="form-step__title">
+                <span class="step-num">01</span> Customer Details
+              </legend>
+
+              <div class="form-row form-row--2">
+                <div class="form-field">
+                  <label for="customerName">Full Name <sup>*</sup></label>
+                  <input type="text" id="customerName" name="customerName" placeholder="e.g. Rajesh Sharma" required>
+                </div>
+                <div class="form-field">
+                  <label for="phone">Mobile Number <sup>*</sup></label>
+                  <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="email">Email Address <sup>*</sup></label>
+                <input type="email" id="email" name="email" placeholder="rajesh@example.com" required>
+              </div>
+
+              <div class="form-row form-row--2">
+                <div class="form-field">
+                  <label for="houseName">House / Building Name <sup>*</sup></label>
+                  <input type="text" id="houseName" name="houseName" placeholder="e.g. Raj Residency" required>
+                </div>
+                <div class="form-field">
+                  <label for="flatNumber">Flat / Apartment Number <sup>*</sup></label>
+                  <input type="text" id="flatNumber" name="flatNumber" placeholder="e.g. A-404" required>
+                </div>
+              </div>
+              <div class="form-row form-row--2">
+                <div class="form-field">
+                  <label for="street">Street / Area <sup>*</sup></label>
+                  <input type="text" id="street" name="street" placeholder="e.g. MG Road" required>
+                </div>
+                <div class="form-field">
+                  <label for="landmark">Landmark <span class="opt">(Optional)</span></label>
+                  <input type="text" id="landmark" name="landmark" placeholder="e.g. Near City Mall">
+                </div>
+              </div>
+              <div class="form-row form-row--3">
+                <div class="form-field">
+                  <label for="city">City <sup>*</sup></label>
+                  <input type="text" id="city" name="city" placeholder="e.g. Ahmedabad" required>
+                </div>
+                <div class="form-field">
+                  <label for="state">State <sup>*</sup></label>
+                  <input type="text" id="state" name="state" placeholder="e.g. Gujarat" required>
+                </div>
+                <div class="form-field">
+                  <label for="pincode">Pincode <sup>*</sup></label>
+                  <input type="text" id="pincode" name="pincode" placeholder="e.g. 380015" required>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Step 2: Vehicle Details -->
+            <fieldset class="form-step">
+              <legend class="form-step__title">
+                <span class="step-num">02</span> Vehicle Details
+              </legend>
+              <div class="form-row form-row--2">
+                <div class="form-field">
+                  <label for="vehicleBrand">Vehicle Brand <sup>*</sup></label>
+                  <input type="text" id="vehicleBrand" name="vehicleBrand" placeholder="e.g. BMW, Mercedes, Toyota" required>
+                </div>
+                <div class="form-field">
+                  <label for="vehicleModel">Vehicle Model <sup>*</sup></label>
+                  <input type="text" id="vehicleModel" name="vehicleModel" placeholder="e.g. 3 Series, C-Class" required>
+                </div>
+              </div>
+              <div class="form-row form-row--2">
+                <div class="form-field">
+                  <label for="vehicleRegistration">Registration Number <sup>*</sup></label>
+                  <input type="text" id="vehicleRegistration" name="vehicleRegistration" placeholder="e.g. GJ-01-AB-1234" required style="text-transform:uppercase;">
+                </div>
+                <div class="form-field">
+                  <label for="vehicleType">Vehicle Type <sup>*</sup></label>
+                  <select id="vehicleType" name="vehicleType" required>
+                    <option value="" disabled selected>Select Type</option>
+                    <option value="Hatchback">Hatchback</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Luxury Sedan">Luxury Sedan</option>
+                    <option value="Luxury SUV">Luxury SUV</option>
+                    <option value="Sports Car">Sports Car</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Step 3: Package & Schedule -->
+            <fieldset class="form-step">
+              <legend class="form-step__title">
+                <span class="step-num">03</span> Package &amp; Schedule
+              </legend>
+              <div class="form-field">
+                <label for="packageName">Cleaning Package <sup>*</sup></label>
+                <select id="packageName" name="packageName" required>
+                  <option value="" disabled selected>Choose your package</option>
+                  <option value="Simple Clean"  data-price="999">Simple Clean — ₹999</option>
+                  <option value="Deep Clean"    data-price="2499">Deep Clean — ₹2,499</option>
+                  <option value="Complete Glow" data-price="4999">Complete Glow — ₹4,999</option>
+                </select>
+              </div>
+              <div class="form-row form-row--2">
+                <div class="form-field">
+                  <label for="appointmentDate">Appointment Date <sup>*</sup></label>
+                  <input type="date" id="appointmentDate" name="appointmentDate" required>
+                </div>
+                <div class="form-field">
+                  <label for="appointmentTime">Appointment Time <sup>*</sup></label>
+                  <input type="time" id="appointmentTime" name="appointmentTime" required>
+                </div>
+              </div>
+            </fieldset>
+
+            <button type="submit" class="btn btn--submit" id="btn-confirm-booking">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Confirm Appointment
+            </button>
+          </form>
+        </div>
+
+        <!-- Live Booking Summary -->
+        <aside class="booking-summary" id="booking-live-summary">
+          <div class="summary-inner">
+            <p class="summary-heading">Booking Summary</p>
+            <div class="summary-rule"></div>
+
+            <dl class="summary-list">
+              <div class="summary-row">
+                <dt>Package</dt>
+                <dd id="summary-package-name">—</dd>
+              </div>
+              <div class="summary-row">
+                <dt>Duration</dt>
+                <dd id="summary-duration">—</dd>
+              </div>
+              <div class="summary-row">
+                <dt>Date &amp; Time</dt>
+                <dd id="summary-schedule">—</dd>
+              </div>
+              <div class="summary-row">
+                <dt>Vehicle</dt>
+                <dd id="summary-vehicle">—</dd>
+              </div>
+              <div class="summary-row summary-row--address">
+                <dt>Address</dt>
+                <dd id="summary-address">—</dd>
+              </div>
+            </dl>
+
+            <div class="summary-total">
+              <span>Total</span>
+              <strong id="summary-total-price">₹0</strong>
+            </div>
+
+            <div class="summary-assurance">
+              <div class="assurance-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Secure &amp; Confidential</span>
+              </div>
+              <div class="assurance-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Instant Confirmation</span>
+              </div>
+              <div class="assurance-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Free Cancellation</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       4. CUSTOMER REVIEWS
+  ══════════════════════════════════════════ -->
+  <section class="reviews-section fade-on-scroll" id="reviews">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Client Stories</p>
+        <h2 class="section-title">What Our Clients Say</h2>
+        <p class="section-subtitle">Over 1,200 vehicles restored and thousands of satisfied owners across the country.</p>
+      </div>
+
+      <div class="reviews-grid">
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"DriveGlow transformed my car beyond recognition. The ceramic coating is absolutely flawless — I could see my reflection perfectly in the hood. The technician arrived exactly on time and treated the car as if it were his own."</p>
+          <div class="review-author">
+            <div class="reviewer-avatar">JM</div>
+            <div>
+              <p class="reviewer-name">Jignesh Mehta</p>
+              <p class="reviewer-info">Mercedes E-Class Owner · Ahmedabad</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="review-card review-card--featured">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"I had the Complete Glow package done on my Fortuner. The attention to detail was extraordinary. Engine bay, leather conditioning, paint correction — every inch of the vehicle was immaculate. Worth every rupee and more."</p>
+          <div class="review-author">
+            <div class="reviewer-avatar">SP</div>
+            <div>
+              <p class="reviewer-name">Sonal Patel</p>
+              <p class="reviewer-info">Toyota Fortuner Owner · Surat</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"Booked the Deep Clean for my BMW 5 Series. The carpet extraction and leather conditioning made the interior feel completely new. Incredibly professional team — booking was seamless through the website."</p>
+          <div class="review-author">
+            <div class="reviewer-avatar">RK</div>
+            <div>
+              <p class="reviewer-name">Rahul Kapoor</p>
+              <p class="reviewer-info">BMW 5 Series Owner · Mumbai</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"My Audi Q7 looked better than the day I drove it out of the showroom. The paint polishing and high-gloss finish are remarkable. DriveGlow is the only detailing service I will ever use."</p>
+          <div class="review-author">
+            <div class="reviewer-avatar">AP</div>
+            <div>
+              <p class="reviewer-name">Ankit Parmar</p>
+              <p class="reviewer-info">Audi Q7 Owner · Vadodara</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"Chose the Simple Clean for a quick refresh before a wedding. Excellent exterior hand wash, perfect tire shine, and the car smelled wonderful inside. Fast, professional, and outstanding value for money."</p>
+          <div class="review-author">
+            <div class="reviewer-avatar">DW</div>
+            <div>
+              <p class="reviewer-name">Darshan Wadia</p>
+              <p class="reviewer-info">Hyundai Creta Owner · Rajkot</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-text">"I was skeptical about mobile detailing but DriveGlow exceeded all expectations. The booking process was effortless, the team arrived with professional equipment, and my car looked showroom perfect. Highly recommended."</p>
+          <div class="review-author">
+            <div class="reviewer-avatar">AM</div>
+            <div>
+              <p class="reviewer-name">Ayesha Merchant</p>
+              <p class="reviewer-info">Mahindra XUV700 Owner · Gandhinagar</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       5. ABOUT DRIVEGLOW
+  ══════════════════════════════════════════ -->
+  <section class="about-section fade-on-scroll" id="about">
+    <div class="container">
+      <div class="about-layout">
+        <div class="about-image-col">
+          <div class="about-img-frame">
+            <img
+              src="https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&q=80&w=900"
+              alt="DriveGlow technician performing professional detailing"
+              class="about-img"
+            >
+            <div class="about-img-overlay"></div>
+          </div>
+          <div class="about-stat-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <div>
+              <span class="pill-num">48+</span>
+              <span class="pill-label">Expert Technicians</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-text-col">
+          <p class="section-eyebrow">Our Story</p>
+          <h2 class="section-title" style="text-align:left; margin-bottom:18px;">About DriveGlow</h2>
+          <p class="about-lead">Founded in 2018, DriveGlow was built on a simple conviction — that every vehicle deserves the same meticulous care its owner gives to every other aspect of their life.</p>
+          <p class="about-body">We are a team of certified automotive detailing specialists trained in the most advanced paint correction, ceramic protection, and interior restoration techniques. Our work has been trusted by luxury vehicle owners, collectors, and enthusiasts across India.</p>
+          <p class="about-body">Every session is conducted with hand-selected, premium-grade products. We work at your location, at your schedule, and to a standard that exceeds every expectation.</p>
+          <div class="about-values">
+            <div class="about-value">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>ISO Certified Products</span>
+            </div>
+            <div class="about-value">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>On-Time Guarantee</span>
+            </div>
+            <div class="about-value">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>100% Satisfaction Assured</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       6. CONTACT SECTION
+  ══════════════════════════════════════════ -->
+  <section class="contact-section fade-on-scroll" id="contact">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow">Get in Touch</p>
+        <h2 class="section-title">Contact Us</h2>
+        <p class="section-subtitle">Have a question before booking? Our team is available seven days a week to assist you.</p>
+      </div>
+
+      <div class="contact-layout">
+        <div class="contact-cards">
+          <div class="contact-card">
+            <div class="contact-card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.1 6.1l.99-.98a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div>
+              <p class="contact-card__label">Phone</p>
+              <p class="contact-card__value">+91 98765 43210</p>
+              <p class="contact-card__note">Mon – Sun · 8 AM – 8 PM</p>
+            </div>
+          </div>
+
+          <div class="contact-card">
+            <div class="contact-card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div>
+              <p class="contact-card__label">Email</p>
+              <p class="contact-card__value">support@driveglow.in</p>
+              <p class="contact-card__note">Response within 2 hours</p>
+            </div>
+          </div>
+
+          <div class="contact-card">
+            <div class="contact-card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div>
+              <p class="contact-card__label">Service Area</p>
+              <p class="contact-card__value">Pan India Mobile Service</p>
+              <p class="contact-card__note">We come to your location</p>
+            </div>
+          </div>
+
+          <div class="contact-card">
+            <div class="contact-card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <p class="contact-card__label">Operating Hours</p>
+              <p class="contact-card__value">7 Days a Week</p>
+              <p class="contact-card__note">8:00 AM – 8:00 PM</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-cta-box">
+          <p class="contact-cta-eyebrow">Ready for a Showroom Finish?</p>
+          <h3 class="contact-cta-heading">Book Your Session Today</h3>
+          <p class="contact-cta-body">Join over 1,200 satisfied clients who trust DriveGlow to restore and protect their most prized vehicles. Secure your slot in under two minutes.</p>
+          <a href="#booking" class="btn btn--primary contact-book-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Book Appointment
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       CONFIRMATION MODAL — PREMIUM SUCCESS SCREEN
+  ══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+    <div class="modal-box modal-box--success">
+      <div class="modal-success-header">
+        <div class="modal-check">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="modal-title" id="modal-heading">Booking Confirmed</h2>
+        <p class="modal-sub">Your booking confirmation and receipt have been sent to your registered email address.</p>
+      </div>
+
+      <!-- Booking Detail Summary -->
+      <div class="modal-booking-details" id="modal-booking-details">
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Booking ID</span>
+          <span class="modal-detail-value" id="modal-booking-id">—</span>
+        </div>
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Customer</span>
+          <span class="modal-detail-value" id="modal-customer-name">—</span>
+        </div>
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Package</span>
+          <span class="modal-detail-value" id="modal-package">—</span>
+        </div>
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Vehicle</span>
+          <span class="modal-detail-value" id="modal-vehicle">—</span>
+        </div>
+        <div class="modal-detail-row">
+          <span class="modal-detail-label">Appointment</span>
+          <span class="modal-detail-value" id="modal-appointment">—</span>
+        </div>
+        <div class="modal-detail-row modal-detail-row--total">
+          <span class="modal-detail-label">Total Amount</span>
+          <span class="modal-detail-value modal-detail-price" id="modal-total">—</span>
+        </div>
+      </div>
+
+      <div class="modal-email-notice">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span id="modal-email-sent-to">Booking confirmation email sent</span>
+      </div>
+
+      <div class="modal-actions">
+        <div class="modal-buttons-row">
+          <button class="btn btn--primary modal-done-btn" id="btn-modal-done">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Done
+          </button>
+          <button class="btn btn--ghost" id="btn-modal-download">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Receipt
+          </button>
+        </div>
+        <button class="btn btn--ghost modal-resend-btn" id="btn-modal-resend" style="display: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Resend Email
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo footer-logo">
+          <span class="logo-drive">Drive</span><span class="logo-glow">Glow</span>
+        </a>
+        <p class="footer-tagline">Restoring showroom perfection,<br>one vehicle at a time.</p>
+      </div>
+
+      <nav class="footer-nav">
+        <p class="footer-nav__head">Navigate</p>
+        <a href="#services">Our Packages</a>
+        <a href="#booking">Book a Session</a>
+        <a href="#reviews">Client Reviews</a>
+        <a href="#about">About Us</a>
+        <a href="#contact">Contact</a>
+        <a href="/admin.html">Admin Panel</a>
+      </nav>
+
+      <div class="footer-services">
+        <p class="footer-nav__head">Services</p>
+        <span>Simple Clean · ₹999</span>
+        <span>Deep Clean · ₹2,499</span>
+        <span>Complete Glow · ₹4,999</span>
+        <span>Paint Correction</span>
+        <span>Ceramic Coating</span>
+        <span>Interior Restoration</span>
+      </div>
+
+      <div class="footer-contact">
+        <p class="footer-nav__head">Contact</p>
+        <p>support@driveglow.in</p>
+        <p>+91 98765 43210</p>
+        <p>Mon – Sun · 8 AM – 8 PM</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 DriveGlow Premium Detailing. All rights reserved.</p>
+      <p>Excellence in Every Detail</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
