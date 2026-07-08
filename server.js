@@ -50,6 +50,10 @@ let _transporter = null;
 function getMailTransporter() {
   if (_transporter) return _transporter;
 
+  console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "FOUND" : "MISSING");
+
   const host = process.env.EMAIL_HOST;
   const port = parseInt(process.env.EMAIL_PORT, 10) || 587;
   const secure = process.env.EMAIL_SECURE === 'true';
@@ -61,22 +65,23 @@ function getMailTransporter() {
     return null;
   }
 
-  __transporter = nodemailer.createTransport({
-  host,
-  port,
-  secure,
-  family: 4,
-  auth: {
-    user,
-    pass,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
+  _transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    family: 4,
+    auth: {
+      user,
+      pass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+  });
+
   return _transporter;
 }
 
