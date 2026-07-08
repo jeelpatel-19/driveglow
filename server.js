@@ -61,14 +61,22 @@ function getMailTransporter() {
     return null;
   }
 
-  _transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-    tls: { rejectUnauthorized: false } // allow self-signed certs on some hosts
-  });
-
+  __transporter = nodemailer.createTransport({
+  host,
+  port,
+  secure,
+  family: 4,
+  auth: {
+    user,
+    pass,
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+});
   return _transporter;
 }
 
