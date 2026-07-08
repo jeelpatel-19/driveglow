@@ -229,6 +229,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnModalDone = document.getElementById('btn-modal-done');
   const submitBtn = document.getElementById('btn-confirm-booking');
 
+  // ── Inline error / notice helpers ────────────────────────────
+  function showFormError(message, type = 'error') {
+    let banner = document.getElementById('booking-form-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'booking-form-banner';
+      banner.style.cssText = [
+        'border-radius:8px', 'padding:14px 18px', 'margin-bottom:18px',
+        'font-size:14px', 'font-weight:500', 'display:flex',
+        'align-items:center', 'gap:10px', 'animation:fadeIn .3s ease'
+      ].join(';');
+      if (bookingForm) bookingForm.prepend(banner);
+    }
+    if (type === 'error') {
+      banner.style.background = 'rgba(180,30,50,0.18)';
+      banner.style.border     = '1px solid rgba(220,50,70,0.4)';
+      banner.style.color      = '#ff6b6b';
+      banner.innerHTML        = '⚠️&nbsp;&nbsp;' + message;
+    } else {
+      banner.style.background = 'rgba(30,180,80,0.15)';
+      banner.style.border     = '1px solid rgba(50,200,100,0.35)';
+      banner.style.color      = '#6be89a';
+      banner.innerHTML        = '✓&nbsp;&nbsp;' + message;
+    }
+    banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearFormBanner() {
+    const banner = document.getElementById('booking-form-banner');
+    if (banner) banner.remove();
+  }
+
+  // ── Submission guard (prevents double-clicks) ─────────────────
+  let isSubmitting = false;
+
   // Modal display elements
   const modalBookingId = document.getElementById('modal-booking-id');
   const modalCustomerName = document.getElementById('modal-customer-name');
@@ -247,6 +282,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (bookingForm) {
     bookingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // Block re-entry if already submitting
+      if (isSubmitting) return;
+      isSubmitting = true;
+      clearFormBanner();
 
       const originalLabel = submitBtn.innerHTML;
       submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>&nbsp;Processing…`;
@@ -345,14 +385,15 @@ document.addEventListener('DOMContentLoaded', () => {
           bookingForm.reset();
           updateLiveSummary();
         } else {
-          alert(`Error: ${data.error || 'Booking failed. Please try again.'}`);
+          showFormError(data.error || 'Booking failed. Please try again.');
         }
       } catch (err) {
         console.error('Booking error:', err);
-        alert('Network error. Please check your connection and try again.');
+        showFormError('Network error — please check your connection and try again.');
       } finally {
         submitBtn.innerHTML = originalLabel;
         submitBtn.disabled = false;
+        isSubmitting = false;
       }
     });
   }
@@ -384,21 +425,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await res.json();
 
         if (res.ok && result.emailSent) {
-          alert('Confirmation email resent successfully!');
           if (modalSub) {
-            modalSub.textContent = "Your booking confirmation and receipt have been sent to your registered email address.";
+            modalSub.textContent = "Confirmation email resent successfully!";
           }
           if (modalEmailSentTo) {
-            modalEmailSentTo.textContent = `Confirmation email sent successfully!`;
+            modalEmailSentTo.textContent = 'Confirmation email sent successfully!';
           }
           if (modalNoticeBox) {
             modalNoticeBox.classList.remove('error');
           }
           btnModalResend.style.display = 'none';
         } else {
-          alert(`Resend failed: ${result.error || 'Check SMTP credentials.'}`);
+          const msg = result.error || 'SMTP server error';
           if (modalEmailSentTo) {
-            modalEmailSentTo.textContent = `Resend failed: ${result.error || 'SMTP server error'}`;
+            modalEmailSentTo.textContent = `Resend failed: ${msg}`;
           }
         }
       } catch (err) {

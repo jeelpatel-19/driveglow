@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: driveglow
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        generateValue: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_SECURE
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
