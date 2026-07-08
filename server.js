@@ -111,68 +111,62 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
   const formattedTime = formatTime12Hour(booking.appointmentTime);
   const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
 
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || 'support@driveglow.com',
-    to: booking.email,
-    subject: `🚗 DriveGlow – Booking Confirmation | Booking ID: ${booking.id}`,
-    text: `Dear ${booking.customerName},
+  const completeAddress = booking.address || [
+    booking.houseName,
+    booking.flatNumber,
+    booking.street,
+    booking.landmark,
+    booking.city,
+    booking.state,
+    booking.pincode
+  ].filter(Boolean).join(', ');
 
-Thank you for choosing DriveGlow Premium Car Detailing.
+  const flatApt = booking.flatNumber || 'N/A';
+
+  const subject = 'DriveGlow – Your Booking Has Been Confirmed';
+
+  const text = `Hello ${booking.customerName},
+
+Thank you for choosing DriveGlow.
 
 Your booking has been confirmed successfully.
 
-Booking Summary:
--------------------------------------------------
-Booking ID         : ${booking.id}
-Customer Name      : ${booking.customerName}
-Mobile Number      : ${booking.phone}
-Email              : ${booking.email}
--------------------------------------------------
+Booking Details:
+• Booking ID
+${booking.id}
 
-Vehicle Details:
--------------------------------------------------
-Brand              : ${booking.vehicleBrand}
-Model              : ${booking.vehicleModel}
-Registration Number: ${booking.vehicleRegistration || 'N/A'}
-Vehicle Type       : ${booking.vehicleType}
--------------------------------------------------
-
-Selected Package:
--------------------------------------------------
+• Package Selected
 ${booking.packageName}
--------------------------------------------------
 
-Appointment:
--------------------------------------------------
-Date               : ${formattedDate}
-Time               : ${formattedTime}
--------------------------------------------------
+• Vehicle Details
+Brand: ${booking.vehicleBrand}
+Model: ${booking.vehicleModel}
+Registration Number: ${booking.vehicleRegistration || 'N/A'}
 
-Service Address:
--------------------------------------------------
-House / Building   : ${booking.houseName || 'N/A'}
-Flat Number        : ${booking.flatNumber || 'N/A'}
-Street             : ${booking.street || 'N/A'}
-City               : ${booking.city}
-State              : ${booking.state}
-Pincode            : ${booking.pincode}
--------------------------------------------------
+• Appointment Date
+${formattedDate}
 
-Total Amount       : ${priceFormatted}
-Payment Method     : Pay After Service
-Booking Status     : Confirmed ✅
+• Appointment Time
+${formattedTime}
 
-Our professional detailing team will arrive at your selected location at the scheduled time.
-If you need to modify or cancel your booking, please contact us.
+• Service Address
+${completeAddress}
+
+• Flat / Apartment Number
+${flatApt}
+
+• Total Amount (₹)
+${priceFormatted}
+
+Our professional detailing team will arrive at your selected time.
 
 Thank you for trusting DriveGlow.
-We look forward to restoring your vehicle to a showroom-quality finish.
+We look forward to giving your vehicle a premium showroom-quality finish.
 
-Best Regards,
-DriveGlow Premium Car Detailing
-support@driveglow.com
-+91 98765 43210`,
-    html: `<!DOCTYPE html>
+Regards,
+DriveGlow Premium Car Detailing`;
+
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -189,13 +183,12 @@ support@driveglow.com
     h2 { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #C6A15B; border-bottom: 1px solid rgba(198,161,91,0.25); padding-bottom: 8px; margin-top: 0; margin-bottom: 15px; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
     td { padding: 6px 0; font-size: 13px; vertical-align: top; }
-    .label { color: #5a5a5a; font-weight: bold; width: 40%; }
+    .label { color: #5a5a5a; font-weight: bold; width: 45%; }
     .value { color: #E5E5E5; text-align: right; }
     .total-row { border-top: 1px dashed rgba(198, 161, 91, 0.25); padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
     .total-label { font-size: 13px; font-weight: bold; color: #A8A8A8; }
     .total-val { font-size: 22px; font-weight: bold; color: #C6A15B; font-family: Georgia, serif; }
     .footer { background-color: #0A0A0A; padding: 25px 40px; text-align: center; font-size: 11px; color: #5a5a5a; border-top: 1px solid rgba(255,255,255,0.05); }
-    .footer a { color: #A8A8A8; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -205,66 +198,60 @@ support@driveglow.com
     <div style="font-size: 10px; color: #5a5a5a; letter-spacing: 2px; margin-top: 5px; text-transform: uppercase;">Premium Automotive Detailing</div>
   </div>
   <div class="body">
-    <h1>Dear ${booking.customerName},</h1>
-    <p>Thank you for choosing <strong>DriveGlow Premium Car Detailing</strong>.</p>
-    <p>Your booking has been confirmed successfully. A copy of your PDF receipt has been attached to this email.</p>
-    
+    <h1>Hello ${booking.customerName},</h1>
+    <p>Thank you for choosing <strong>DriveGlow</strong>.</p>
+    <p>Your booking has been confirmed successfully.</p>
+
     <div class="details-box">
-      <h2>Booking Summary</h2>
+      <h2>Booking Details</h2>
       <table>
         <tr><td class="label">Booking ID</td><td class="value"><strong>${booking.id}</strong></td></tr>
+        <tr><td class="label">Package Selected</td><td class="value"><strong>${booking.packageName}</strong></td></tr>
         <tr><td class="label">Customer Name</td><td class="value">${booking.customerName}</td></tr>
         <tr><td class="label">Mobile Number</td><td class="value">${booking.phone}</td></tr>
-        <tr><td class="label">Email</td><td class="value">${booking.email}</td></tr>
-      </table>
-      
-      <h2>Vehicle Details</h2>
-      <table>
-        <tr><td class="label">Brand</td><td class="value">${booking.vehicleBrand}</td></tr>
-        <tr><td class="label">Model</td><td class="value">${booking.vehicleModel}</td></tr>
-        <tr><td class="label">Registration No.</td><td class="value">${booking.vehicleRegistration || 'N/A'}</td></tr>
-        <tr><td class="label">Vehicle Type</td><td class="value">${booking.vehicleType}</td></tr>
-      </table>
-
-      <h2>Service Details</h2>
-      <table>
-        <tr><td class="label">Selected Package</td><td class="value"><strong>${booking.packageName}</strong></td></tr>
+        <tr><td class="label">Vehicle Brand</td><td class="value">${booking.vehicleBrand}</td></tr>
+        <tr><td class="label">Vehicle Model</td><td class="value">${booking.vehicleModel}</td></tr>
+        <tr><td class="label">Vehicle Registration Number</td><td class="value">${booking.vehicleRegistration || 'N/A'}</td></tr>
         <tr><td class="label">Appointment Date</td><td class="value">${formattedDate}</td></tr>
         <tr><td class="label">Appointment Time</td><td class="value">${formattedTime}</td></tr>
-      </table>
-
-      <h2>Service Address</h2>
-      <table>
-        <tr><td class="label">House / Building</td><td class="value">${booking.houseName || 'N/A'}</td></tr>
-        <tr><td class="label">Flat Number</td><td class="value">${booking.flatNumber || 'N/A'}</td></tr>
-        <tr><td class="label">Street</td><td class="value">${booking.street || 'N/A'}</td></tr>
-        <tr><td class="label">City &amp; State</td><td class="value">${booking.city}, ${booking.state}</td></tr>
-        <tr><td class="label">Pincode</td><td class="value">${booking.pincode}</td></tr>
+        <tr><td class="label">Service Address</td><td class="value">${completeAddress}</td></tr>
+        <tr><td class="label">Flat / Apartment Number</td><td class="value">${flatApt}</td></tr>
+        <tr><td class="label">Total Price (₹)</td><td class="value">${priceFormatted}</td></tr>
+        <tr><td class="label">Booking Status</td><td class="value">${booking.status || 'Confirmed'}</td></tr>
       </table>
 
       <div class="total-row">
-        <span class="total-label">Grand Total (Pay After Service)</span>
+        <span class="total-label">Total Amount</span>
         <span class="total-val">${priceFormatted}</span>
       </div>
     </div>
-    
-    <p>Our professional detailing team will arrive at your selected location at the scheduled time. Please ensure water and power connections are accessible.</p>
-    <p>If you have any questions or need to reschedule, feel free to reply directly to this email or call us.</p>
-    <p>We look forward to giving your vehicle a showroom-quality finish!</p>
+
+    <p>Our professional detailing team will arrive at your selected time.</p>
+    <p>Thank you for trusting DriveGlow.</p>
+    <p>We look forward to giving your vehicle a premium showroom-quality finish.</p>
+
+    <p><strong>Regards,</strong><br/>DriveGlow Premium Car Detailing</p>
   </div>
+
   <div class="footer">
-    <p>&copy; 2026 DriveGlow Premium Detailing. All rights reserved.</p>
-    <p>support@driveglow.com &nbsp;·&nbsp; +91 98765 43210 &nbsp;·&nbsp; Mon - Sun, 8 AM - 8 PM</p>
+    <p>support@driveglow.in &nbsp;·&nbsp; +91 98765 43210</p>
   </div>
 </div>
 </body>
-</html>`,
+</html>`;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'support@driveglow.com',
+    to: booking.email,
+    subject,
+    text,
+    html,
     attachments: [
       {
         filename: `DriveGlow-Receipt-${booking.id}.pdf`,
-        path: pdfFilePath
-      }
-    ]
+        path: pdfFilePath,
+      },
+    ],
   };
 
   return transporter.sendMail(mailOptions);
@@ -558,6 +545,42 @@ app.delete('/api/bookings/:id', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`DriveGlow Server running on http://localhost:${PORT}`);
+const os = require('os');
+
+function getLocalIPAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  for (const name in interfaces) {
+    for (const net of interfaces[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        addresses.push({ name, address: net.address });
+      }
+    }
+  }
+  return addresses;
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  const ipList = getLocalIPAddresses();
+  console.log('\n==================================================');
+  console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
+  console.log('==================================================');
+  console.log(`  Computer / Laptop:  http://localhost:${PORT}`);
+  console.log('  Mobile Phone (connect to same Wi-Fi first):');
+  ipList.forEach(ip => {
+    let label = 'LAN';
+    const lowerName = ip.name.toLowerCase();
+    if (lowerName.includes('wi-fi') || lowerName.includes('wlan') || lowerName.includes('wireless')) {
+      label = 'Wi-Fi (Preferred)';
+    } else if (lowerName.includes('ethernet')) {
+      label = 'Ethernet';
+    } else if (lowerName.includes('vmnet') || lowerName.includes('virtualbox') || lowerName.includes('vethernet')) {
+      label = 'Virtual Interface (Skip)';
+    }
+    console.log(`  • http://${ip.address}:${PORT}  [${ip.name} - ${label}]`);
+  });
+  console.log('--------------------------------------------------');
+  console.log('  Note: Make sure both your phone and computer');
+  console.log('  are connected to the same Wi-Fi network.');
+  console.log('==================================================\n');
 });

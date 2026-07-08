@@ -4,18 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRefresh = document.getElementById('btn-refresh');
   const searchInput = document.getElementById('admin-search-input');
   const statusFilters = document.getElementById('status-filters');
-  
+
   // Stats Elements
   const statTotalBookings = document.getElementById('stat-total-bookings').querySelector('.stat-tile__value');
   const statRevenue = document.getElementById('stat-revenue').querySelector('.stat-tile__value');
   const statPending = document.getElementById('stat-pending').querySelector('.stat-tile__value');
   const statCompleted = document.getElementById('stat-completed').querySelector('.stat-tile__value');
-  
+
   // Edit Modal Elements
   const editModal = document.getElementById('edit-booking-modal');
   const btnCloseEditModal = document.getElementById('btn-close-edit-modal');
   const editForm = document.getElementById('edit-booking-form');
-  
+
   // Edit Form Fields
   const editIdInput = document.getElementById('edit-booking-id');
   const editCustomerName = document.getElementById('edit-customerName');
@@ -61,17 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Calculate Statistics ---
   const calculateStats = () => {
     const total = allBookings.length;
-    
+
     // Revenue from Confirmed & Completed bookings
     const revenue = allBookings
       .filter(b => b.status === 'Confirmed' || b.status === 'Completed')
       .reduce((sum, b) => sum + (b.price || 0), 0);
-      
+
     const pending = allBookings.filter(b => b.status === 'Pending').length;
     const completed = allBookings.filter(b => b.status === 'Completed').length;
 
     statTotalBookings.textContent = total;
-    statRevenue.textContent = `$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    statRevenue.textContent = `₹${revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     statPending.textContent = pending;
     statCompleted.textContent = completed;
   };
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dateParts = booking.appointmentDate.split('-');
       const formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2])
         .toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-      
+
       const statusClass = `badge badge--${booking.status.toLowerCase()}`;
 
       // Conditional action buttons
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td>
             <div style="font-weight:500; color:var(--text-primary)">${booking.packageName}</div>
-            <div class="cell-price">$${booking.price}</div>
+            <div class="cell-price">₹${Number(booking.price).toLocaleString('en-IN')}</div>
           </td>
           <td>
             <div style="font-weight:500; color:var(--text-primary); white-space:nowrap">${formattedDate}</div>
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = editIdInput.value;
-      
+
       const payload = {
         customerName: editCustomerName.value.trim(),
         phone: editPhone.value.trim(),

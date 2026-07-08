@@ -11,24 +11,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ─── MOBILE DRAWER ───────────────────────────────────────────────────────
-  const hamburger   = document.getElementById('mobile-menu-toggle');
-  const drawer      = document.getElementById('mobile-drawer');
+  const hamburger = document.getElementById('mobile-menu-toggle');
+  const drawer = document.getElementById('mobile-drawer');
   const drawerClose = document.getElementById('drawer-close-btn');
-  const backdrop    = document.getElementById('drawer-backdrop');
+  const backdrop = document.getElementById('drawer-backdrop');
 
   const openDrawer = () => {
     if (drawer) drawer.classList.add('open');
+    if (hamburger) hamburger.classList.add('active');
+    if (backdrop) backdrop.classList.add('active');
     document.body.style.overflow = 'hidden';
   };
 
   const closeDrawer = () => {
     if (drawer) drawer.classList.remove('open');
+    if (hamburger) hamburger.classList.remove('active');
+    if (backdrop) backdrop.classList.remove('active');
     document.body.style.overflow = '';
   };
 
-  if (hamburger)   hamburger.addEventListener('click', openDrawer);
+  if (hamburger) hamburger.addEventListener('click', () => {
+    if (hamburger.classList.contains('active')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
   if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
-  if (backdrop)    backdrop.addEventListener('click', closeDrawer);
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
 
   document.querySelectorAll('.drawer-link').forEach(link => {
     link.addEventListener('click', closeDrawer);
@@ -56,13 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.faq-question').forEach(btn => {
     btn.addEventListener('click', () => {
       const answerId = btn.getAttribute('aria-controls');
-      const answer   = document.getElementById(answerId);
-      const isOpen   = btn.getAttribute('aria-expanded') === 'true';
+      const answer = document.getElementById(answerId);
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
 
       document.querySelectorAll('.faq-question').forEach(other => {
         if (other !== btn) {
           other.setAttribute('aria-expanded', 'false');
-          const otherId  = other.getAttribute('aria-controls');
+          const otherId = other.getAttribute('aria-controls');
           const otherAns = document.getElementById(otherId);
           if (otherAns) otherAns.classList.remove('open');
         }
@@ -78,9 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const appointmentDateInput = document.getElementById('appointmentDate');
   if (appointmentDateInput) {
     const today = new Date();
-    const yyyy  = today.getFullYear();
-    const mm    = String(today.getMonth() + 1).padStart(2, '0');
-    const dd    = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
     appointmentDateInput.setAttribute('min', `${yyyy}-${mm}-${dd}`);
   }
 
@@ -119,14 +129,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ─── PACKAGE PRICES (₹) ──────────────────────────────────────────────────
   const durations = {
-    'Simple Clean':  '2 Hours',
-    'Deep Clean':    '4.5 Hours',
+    'Simple Clean': '2 Hours',
+    'Deep Clean': '4.5 Hours',
     'Complete Glow': '8 Hours',
   };
 
   const prices = {
-    'Simple Clean':  999,
-    'Deep Clean':    2499,
+    'Simple Clean': 999,
+    'Deep Clean': 2499,
     'Complete Glow': 4999,
   };
 
@@ -135,43 +145,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ─── LIVE BOOKING SUMMARY ────────────────────────────────────────────────
   const summaryPackageName = document.getElementById('summary-package-name');
-  const summaryDuration    = document.getElementById('summary-duration');
-  const summarySchedule    = document.getElementById('summary-schedule');
-  const summaryVehicle     = document.getElementById('summary-vehicle');
-  const summaryAddress     = document.getElementById('summary-address');
-  const summaryTotalPrice  = document.getElementById('summary-total-price');
+  const summaryDuration = document.getElementById('summary-duration');
+  const summarySchedule = document.getElementById('summary-schedule');
+  const summaryVehicle = document.getElementById('summary-vehicle');
+  const summaryAddress = document.getElementById('summary-address');
+  const summaryTotalPrice = document.getElementById('summary-total-price');
 
-  const appointmentDate    = document.getElementById('appointmentDate');
-  const appointmentTime    = document.getElementById('appointmentTime');
-  const vehicleBrandInput  = document.getElementById('vehicleBrand');
-  const vehicleModelInput  = document.getElementById('vehicleModel');
-  const vehicleTypeSelect  = document.getElementById('vehicleType');
-  const flatNumberInput    = document.getElementById('flatNumber');
-  const houseNameInput     = document.getElementById('houseName');
-  const streetInput        = document.getElementById('street');
-  const cityInput          = document.getElementById('city');
-  const stateInput         = document.getElementById('state');
-  const pincodeInput       = document.getElementById('pincode');
+  const appointmentDate = document.getElementById('appointmentDate');
+  const appointmentTime = document.getElementById('appointmentTime');
+  const vehicleBrandInput = document.getElementById('vehicleBrand');
+  const vehicleModelInput = document.getElementById('vehicleModel');
+  const vehicleTypeSelect = document.getElementById('vehicleType');
+  const flatNumberInput = document.getElementById('flatNumber');
+  const houseNameInput = document.getElementById('houseName');
+  const streetInput = document.getElementById('street');
+  const cityInput = document.getElementById('city');
+  const stateInput = document.getElementById('state');
+  const pincodeInput = document.getElementById('pincode');
 
   const updateLiveSummary = () => {
     if (packageSelect) {
       const pkgName = packageSelect.value;
       if (pkgName) {
         if (summaryPackageName) summaryPackageName.textContent = pkgName;
-        if (summaryDuration)    summaryDuration.textContent    = durations[pkgName] || '—';
-        if (summaryTotalPrice)  summaryTotalPrice.textContent  = formatINR(prices[pkgName] || 0);
+        if (summaryDuration) summaryDuration.textContent = durations[pkgName] || '—';
+        if (summaryTotalPrice) summaryTotalPrice.textContent = formatINR(prices[pkgName] || 0);
       } else {
         if (summaryPackageName) summaryPackageName.textContent = '—';
-        if (summaryDuration)    summaryDuration.textContent    = '—';
-        if (summaryTotalPrice)  summaryTotalPrice.textContent  = '₹0';
+        if (summaryDuration) summaryDuration.textContent = '—';
+        if (summaryTotalPrice) summaryTotalPrice.textContent = '₹0';
       }
     }
 
     // Schedule
     if (appointmentDate && appointmentTime &&
-        appointmentDate.value && appointmentTime.value) {
+      appointmentDate.value && appointmentTime.value) {
       const [y, m, d] = appointmentDate.value.split('-');
-      const formatted  = new Date(y, m - 1, d)
+      const formatted = new Date(y, m - 1, d)
         .toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
       if (summarySchedule) summarySchedule.textContent = `${formatted} · ${appointmentTime.value}`;
     } else {
@@ -181,19 +191,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Vehicle
     const brand = vehicleBrandInput?.value.trim() || '';
     const model = vehicleModelInput?.value.trim() || '';
-    const type  = vehicleTypeSelect?.value          || '';
-    const reg   = regInput?.value.trim()             || '';
+    const type = vehicleTypeSelect?.value || '';
+    const reg = regInput?.value.trim() || '';
     const vehicleText = [brand, model, type ? `(${type})` : '', reg ? `· ${reg}` : ''].filter(Boolean).join(' ');
     if (summaryVehicle) summaryVehicle.textContent = vehicleText || '—';
 
     // Address
     const parts = [
-      flatNumberInput?.value.trim()  ? `Unit ${flatNumberInput.value.trim()}`  : '',
-      houseNameInput?.value.trim()   || '',
-      streetInput?.value.trim()      || '',
-      cityInput?.value.trim()        || '',
-      stateInput?.value.trim()       || '',
-      pincodeInput?.value.trim()     || '',
+      flatNumberInput?.value.trim() ? `Unit ${flatNumberInput.value.trim()}` : '',
+      houseNameInput?.value.trim() || '',
+      streetInput?.value.trim() || '',
+      cityInput?.value.trim() || '',
+      stateInput?.value.trim() || '',
+      pincodeInput?.value.trim() || '',
     ].filter(Boolean);
     if (summaryAddress) summaryAddress.textContent = parts.join(', ') || '—';
   };
@@ -208,31 +218,31 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('landmark'),
   ].forEach(el => {
     if (!el) return;
-    el.addEventListener('input',  updateLiveSummary);
+    el.addEventListener('input', updateLiveSummary);
     el.addEventListener('change', updateLiveSummary);
   });
 
 
   // ─── FORM SUBMISSION ─────────────────────────────────────────────────────
-  const bookingForm    = document.getElementById('booking-form-element');
-  const confirmModal   = document.getElementById('confirmation-modal');
-  const btnModalDone   = document.getElementById('btn-modal-done');
-  const submitBtn      = document.getElementById('btn-confirm-booking');
+  const bookingForm = document.getElementById('booking-form-element');
+  const confirmModal = document.getElementById('confirmation-modal');
+  const btnModalDone = document.getElementById('btn-modal-done');
+  const submitBtn = document.getElementById('btn-confirm-booking');
 
   // Modal display elements
-  const modalBookingId    = document.getElementById('modal-booking-id');
+  const modalBookingId = document.getElementById('modal-booking-id');
   const modalCustomerName = document.getElementById('modal-customer-name');
-  const modalPackage      = document.getElementById('modal-package');
-  const modalVehicle      = document.getElementById('modal-vehicle');
-  const modalAppointment  = document.getElementById('modal-appointment');
-  const modalTotal        = document.getElementById('modal-total');
-  const modalEmailSentTo  = document.getElementById('modal-email-sent-to');
-  
+  const modalPackage = document.getElementById('modal-package');
+  const modalVehicle = document.getElementById('modal-vehicle');
+  const modalAppointment = document.getElementById('modal-appointment');
+  const modalTotal = document.getElementById('modal-total');
+  const modalEmailSentTo = document.getElementById('modal-email-sent-to');
+
   // Custom display/buttons elements
-  const btnModalDownload  = document.getElementById('btn-modal-download');
-  const btnModalResend    = document.getElementById('btn-modal-resend');
-  const modalNoticeBox    = document.querySelector('.modal-email-notice');
-  const modalSub          = document.querySelector('.modal-sub');
+  const btnModalDownload = document.getElementById('btn-modal-download');
+  const btnModalResend = document.getElementById('btn-modal-resend');
+  const modalNoticeBox = document.querySelector('.modal-email-notice');
+  const modalSub = document.querySelector('.modal-sub');
 
   if (bookingForm) {
     bookingForm.addEventListener('submit', async (e) => {
@@ -240,37 +250,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const originalLabel = submitBtn.innerHTML;
       submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>&nbsp;Processing…`;
-      submitBtn.disabled  = true;
+      submitBtn.disabled = true;
 
       const pkgName = packageSelect?.value;
-      const price   = prices[pkgName] || 0;
+      const price = prices[pkgName] || 0;
 
       const payload = {
-        customerName:        document.getElementById('customerName')?.value.trim(),
-        phone:               document.getElementById('phone')?.value.trim(),
-        email:               document.getElementById('email')?.value.trim(),
-        houseName:           houseNameInput?.value.trim(),
-        flatNumber:          flatNumberInput?.value.trim(),
-        street:              streetInput?.value.trim(),
-        landmark:            document.getElementById('landmark')?.value.trim(),
-        city:                cityInput?.value.trim(),
-        state:               stateInput?.value.trim(),
-        pincode:             pincodeInput?.value.trim(),
-        vehicleBrand:        vehicleBrandInput?.value.trim(),
-        vehicleModel:        vehicleModelInput?.value.trim(),
-        vehicleType:         vehicleTypeSelect?.value,
+        customerName: document.getElementById('customerName')?.value.trim(),
+        phone: document.getElementById('phone')?.value.trim(),
+        email: document.getElementById('email')?.value.trim(),
+        houseName: houseNameInput?.value.trim(),
+        flatNumber: flatNumberInput?.value.trim(),
+        street: streetInput?.value.trim(),
+        landmark: document.getElementById('landmark')?.value.trim(),
+        city: cityInput?.value.trim(),
+        state: stateInput?.value.trim(),
+        pincode: pincodeInput?.value.trim(),
+        vehicleBrand: vehicleBrandInput?.value.trim(),
+        vehicleModel: vehicleModelInput?.value.trim(),
+        vehicleType: vehicleTypeSelect?.value,
         vehicleRegistration: regInput?.value.trim().toUpperCase(),
-        packageName:         pkgName,
+        packageName: pkgName,
         price,
-        appointmentDate:     appointmentDate?.value,
-        appointmentTime:     appointmentTime?.value,
+        appointmentDate: appointmentDate?.value,
+        appointmentTime: appointmentTime?.value,
       };
 
       try {
-        const res  = await fetch('/api/bookings', {
-          method:  'POST',
+        const res = await fetch('/api/bookings', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(payload),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
 
@@ -278,10 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const bk = data.booking;
 
           // Populate success modal
-          if (modalBookingId)    modalBookingId.textContent    = bk.id;
+          if (modalBookingId) modalBookingId.textContent = bk.id;
           if (modalCustomerName) modalCustomerName.textContent = bk.customerName;
-          if (modalPackage)      modalPackage.textContent      = bk.packageName;
-          if (modalVehicle)      modalVehicle.textContent      = `${bk.vehicleBrand} ${bk.vehicleModel}${bk.vehicleRegistration ? ' · ' + bk.vehicleRegistration : ''}`;
+          if (modalPackage) modalPackage.textContent = bk.packageName;
+          if (modalVehicle) modalVehicle.textContent = `${bk.vehicleBrand} ${bk.vehicleModel}${bk.vehicleRegistration ? ' · ' + bk.vehicleRegistration : ''}`;
 
           // Format appointment
           if (modalAppointment) {
@@ -291,12 +301,12 @@ document.addEventListener('DOMContentLoaded', () => {
             modalAppointment.textContent = `${dateStr} at ${bk.appointmentTime}`;
           }
 
-          if (modalTotal)       modalTotal.textContent       = formatINR(bk.price);
+          if (modalTotal) modalTotal.textContent = formatINR(bk.price);
 
           // Configure email delivery status UI
           if (data.emailSent) {
             if (modalSub) {
-              modalSub.textContent = "Your booking confirmation and receipt have been sent to your registered email address.";
+              modalSub.textContent = "Your confirmation email has been sent successfully.";
             }
             if (modalEmailSentTo) {
               modalEmailSentTo.textContent = `Confirmation email sent to ${bk.email}`;
@@ -342,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Network error. Please check your connection and try again.');
       } finally {
         submitBtn.innerHTML = originalLabel;
-        submitBtn.disabled  = false;
+        submitBtn.disabled = false;
       }
     });
   }
@@ -372,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST'
         });
         const result = await res.json();
-        
+
         if (res.ok && result.emailSent) {
           alert('Confirmation email resent successfully!');
           if (modalSub) {
@@ -413,5 +423,26 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && confirmModal?.classList.contains('active')) closeModal();
   });
+
+  // ─── MOBILE FLOATING BOOK NOW ───────────────────────────────────────────
+  const floatingBookingBtn = document.getElementById('mobile-floating-booking');
+  if (floatingBookingBtn) {
+    window.addEventListener('scroll', () => {
+      const heroSection = document.getElementById('hero-section');
+      const bookingSection = document.getElementById('booking');
+      
+      const heroHeight = heroSection ? heroSection.offsetHeight : 500;
+      const bookingTop = bookingSection ? bookingSection.getBoundingClientRect().top + window.scrollY : 1500;
+      const bookingBottom = bookingSection ? bookingTop + bookingSection.offsetHeight : 2000;
+      
+      const currentScroll = window.scrollY;
+      
+      if (currentScroll > heroHeight - 100 && (currentScroll < bookingTop - 200 || currentScroll > bookingBottom - 100)) {
+        floatingBookingBtn.classList.add('visible');
+      } else {
+        floatingBookingBtn.classList.remove('visible');
+      }
+    }, { passive: true });
+  }
 
 });
