@@ -17,8 +17,15 @@ const { generateReceiptPDF } = require('./receipt');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Global crash guards (never let the server go down) ───────
+// ─── Global crash guards ──────────────────────────────────────
+// EADDRINUSE must still exit so node --watch can restart cleanly.
+// All other unexpected errors are logged but the server stays up.
 process.on('uncaughtException', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[ERROR] Port ${PORT} is already in use.`);
+    console.error('  Stop the other process first, then restart.\n');
+    process.exit(1);          // clean exit → node --watch will retry on file change
+  }
   console.error('[UNCAUGHT EXCEPTION]', err);
 });
 process.on('unhandledRejection', (reason) => {
@@ -51,8 +58,8 @@ function getMailTransporter() {
   if (_transporter) return _transporter;
 
   console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
-console.log("EMAIL_USER:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "FOUND" : "MISSING");
+  console.log("EMAIL_USER:", process.env.EMAIL_USER);
+  console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "FOUND" : "MISSING");
 
   const host = process.env.EMAIL_HOST;
   const port = parseInt(process.env.EMAIL_PORT, 10) || 587;

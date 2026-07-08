@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "powershell -Command \"$pid3000 = (netstat -ano | Select-String ':3000 .*LISTENING').ToString().Trim().Split()[-1]; if ($pid3000) { taskkill /F /PID $pid3000 2>$null }\" & node --watch server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
