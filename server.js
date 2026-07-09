@@ -1,15 +1,16 @@
 // ─────────────────────────────────────────────────────────────
 //  DriveGlow — Production-Ready Server
-//  Works on localhost AND Render deployment
+//  Email: Resend API (works on Railway, Render, Fly.io, localhost)
+//  Booking: Express + JSON file store
 // ─────────────────────────────────────────────────────────────
 require('dotenv').config();
 
-const express    = require('express');
-const cors       = require('cors');
-const fs         = require('fs');
-const path       = require('path');
-const os         = require('os');
-const nodemailer = require('nodemailer');
+const express  = require('express');
+const cors     = require('cors');
+const fs       = require('fs');
+const path     = require('path');
+const os       = require('os');
+const { Resend } = require('resend');
 
 const { generateReceiptPDF } = require('./receipt');
 
@@ -18,8 +19,6 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Global crash guards ──────────────────────────────────────
-// EADDRINUSE must still exit so node --watch can restart cleanly.
-// All other unexpected errors are logged but server stays alive.
 process.on('uncaughtException', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\n[ERROR] Port ${PORT} is already in use. Stop the other process first.\n`);
@@ -40,7 +39,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 const DB_FILE      = path.join(__dirname, 'bookings.json');
 const RECEIPTS_DIR = path.join(__dirname, 'logs', 'receipts');
 
-// Ensure required directories / files exist
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2));
 }
@@ -49,78 +47,28 @@ if (!fs.existsSync(RECEIPTS_DIR)) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL CONFIGURATION — log every variable at startup
+//  RESEND EMAIL CONFIGURATION
 // ─────────────────────────────────────────────────────────────
 
-// Read and clean env vars once at module load
-const EMAIL_HOST   = (process.env.EMAIL_HOST   || '').trim();
-const EMAIL_PORT   = parseInt(process.env.EMAIL_PORT || '465', 10);
-const EMAIL_SECURE = process.env.EMAIL_SECURE === 'true' || EMAIL_PORT === 465;
-const EMAIL_USER   = (process.env.EMAIL_USER   || '').trim();
-// Strip spaces — Google App Passwords are shown with spaces but must be used without
-const EMAIL_PASS   = (process.env.EMAIL_PASS   || '').replace(/\s+/g, '');
-const EMAIL_FROM   = (process.env.EMAIL_FROM   || EMAIL_USER).trim();
+// Read env vars once at startup
+const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
+const EMAIL_FROM     = (process.env.EMAIL_FROM     || '').trim();
+const OWNER_EMAIL    = (process.env.OWNER_EMAIL    || '').trim();
 
-console.log('\n[EMAIL CONFIG CHECK]');
-console.log(`  EMAIL_HOST   : ${EMAIL_HOST   || '⚠️  NOT SET'}`);
-console.log(`  EMAIL_PORT   : ${EMAIL_PORT}`);
-console.log(`  EMAIL_SECURE : ${EMAIL_SECURE}`);
-console.log(`  EMAIL_USER   : ${EMAIL_USER   || '⚠️  NOT SET'}`);
-console.log(`  EMAIL_PASS   : ${EMAIL_PASS   ? '✅ SET (' + EMAIL_PASS.length + ' chars)' : '⚠️  NOT SET'}`);
-console.log(`  EMAIL_FROM   : ${EMAIL_FROM   || '⚠️  NOT SET'}`);
-if (!EMAIL_HOST || !EMAIL_USER || !EMAIL_PASS) {
-  console.warn('  ⚠️  One or more EMAIL env vars are missing.');
-  console.warn('  If on Railway: Dashboard → your service → Variables → add EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS, EMAIL_FROM');
+// Log config at startup (no secrets exposed)
+console.log('\n[EMAIL CONFIG — Resend]');
+console.log(`  RESEND_API_KEY : ${RESEND_API_KEY ? '✅ SET (' + RESEND_API_KEY.length + ' chars)' : '⚠️  NOT SET'}`);
+console.log(`  EMAIL_FROM     : ${EMAIL_FROM  || '⚠️  NOT SET'}`);
+console.log(`  OWNER_EMAIL    : ${OWNER_EMAIL || '⚠️  NOT SET'}`);
+if (!RESEND_API_KEY || !EMAIL_FROM || !OWNER_EMAIL) {
+  console.warn('  ⚠️  One or more email env vars are missing.');
+  console.warn('  Railway: Dashboard → your service → Variables');
+  console.warn('  Required: RESEND_API_KEY, EMAIL_FROM, OWNER_EMAIL');
 }
 console.log('');
 
-// ─────────────────────────────────────────────────────────────
-//  MAIL TRANSPORTER
-//  - Created ONCE and cached
-//  - Only cached after SUCCESSFUL verification
-//  - Uses SSL port 465 by default (works on Render)
-//  - Falls back to STARTTLS port 587 if EMAIL_PORT is set to 587
-// ─────────────────────────────────────────────────────────────
-let _transporter = null;
-let _transporterVerified = false;
-
-async function getVerifiedTransporter() {
-  // Return verified cached transporter immediately
-  if (_transporter && _transporterVerified) return _transporter;
-
-  // Cannot build transporter without credentials
-  if (!EMAIL_HOST || !EMAIL_USER || !EMAIL_PASS) {
-    throw new Error(
-      'SMTP credentials missing. Set EMAIL_HOST, EMAIL_USER, EMAIL_PASS environment variables.'
-    );
-  }
-
-  // Create fresh transporter
-  const transport = nodemailer.createTransport({
-    host:   EMAIL_HOST,
-    port:   EMAIL_PORT,
-    secure: EMAIL_SECURE,        // true for port 465, false for 587
-    auth: {
-      user: EMAIL_USER,
-      pass: EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false, // allow self-signed certs
-    },
-    connectionTimeout: 20000,    // 20s — generous for Render cold starts
-    greetingTimeout:   20000,
-    socketTimeout:     45000,    // 45s socket timeout
-  });
-
-  // Verify the connection (throws if SMTP credentials are wrong)
-  console.log(`[EMAIL] Verifying SMTP connection to ${EMAIL_HOST}:${EMAIL_PORT}...`);
-  await transport.verify();
-  console.log('[EMAIL] ✅ SMTP connection verified successfully.');
-
-  _transporter = transport;
-  _transporterVerified = true;
-  return _transporter;
-}
+// Initialise Resend client once — null if API key is missing
+const resendClient = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 // ─────────────────────────────────────────────────────────────
 //  DATABASE HELPERS
@@ -128,8 +76,7 @@ async function getVerifiedTransporter() {
 
 function readBookings() {
   try {
-    const data = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   } catch (err) {
     console.error('[DB] Error reading bookings:', err.message);
     return [];
@@ -151,12 +98,9 @@ function writeBookings(bookings) {
 
 function generateBookingID() {
   const bookings = readBookings();
-  let id;
-  let isUnique = false;
-  let attempts = 0;
+  let id, isUnique = false, attempts = 0;
   while (!isUnique && attempts < 100) {
-    const num = Math.floor(10000 + Math.random() * 90000);
-    id = `DG-${num}`;
+    id = `DG-${Math.floor(10000 + Math.random() * 90000)}`;
     isUnique = !bookings.some(b => b.id === id);
     attempts++;
   }
@@ -190,26 +134,30 @@ function buildAddress(b) {
     b.city       || '',
     b.state      || '',
     b.pincode    || ''
-  ].filter(part => typeof part === 'string' && part.trim() !== '').join(', ');
+  ].filter(p => typeof p === 'string' && p.trim() !== '').join(', ');
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL: CUSTOMER CONFIRMATION
+//  EMAIL: CUSTOMER CONFIRMATION  (via Resend)
 // ─────────────────────────────────────────────────────────────
 async function sendConfirmationEmail(booking, pdfFilePath) {
+  if (!resendClient) {
+    throw new Error('Resend client not initialised — RESEND_API_KEY is missing.');
+  }
   if (!booking.email) {
-    throw new Error('Cannot send confirmation: customer email address is missing.');
+    throw new Error('Customer email address is missing from booking.');
+  }
+  if (!EMAIL_FROM) {
+    throw new Error('EMAIL_FROM environment variable is not set.');
   }
 
-  const transporter    = await getVerifiedTransporter();
   const formattedDate  = formatDateNice(booking.appointmentDate);
   const formattedTime  = formatTime12Hour(booking.appointmentTime);
   const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
   const address        = booking.address || buildAddress(booking);
 
-  const subject = `DriveGlow – Booking Confirmed · ${booking.id}`;
-
-  const textBody = [
+  // Build plain-text fallback
+  const text = [
     `Hello ${booking.customerName},`,
     '',
     'Your DriveGlow booking has been confirmed successfully.',
@@ -223,37 +171,38 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
     `Total Amount : ${priceFormatted}`,
     '',
     'Our professional detailing team will arrive at your selected time.',
-    'Thank you for trusting DriveGlow.',
+    'Thank you for choosing DriveGlow.',
     '',
     'Regards,',
     'DriveGlow Premium Car Detailing'
   ].join('\n');
 
-  const htmlBody = `<!DOCTYPE html>
+  // Build HTML email
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <style>
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background:#0F0F0F; color:#E5E5E5; margin:0; padding:40px 0; }
-    .wrap { max-width:600px; margin:0 auto; background:#141414; border:1px solid rgba(198,161,91,0.25); border-radius:12px; overflow:hidden; }
-    .hdr  { background:#0A0A0A; padding:28px 40px; border-bottom:2px solid #4D1022; text-align:center; }
-    .logo { font-size:22px; font-weight:bold; letter-spacing:3px; color:#fff; font-family:Georgia,serif; }
-    .logo span { color:#C6A15B; }
-    .sub  { font-size:10px; color:#5a5a5a; letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
-    .body { padding:36px 40px; line-height:1.65; font-size:14px; }
-    h1   { color:#fff; font-size:20px; font-weight:normal; font-family:Georgia,serif; margin:0 0 16px; }
-    p    { color:#A8A8A8; margin:0 0 18px; }
-    .box { background:#1C1C1C; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:24px; margin-bottom:28px; }
-    h2   { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#C6A15B; border-bottom:1px solid rgba(198,161,91,0.2); padding-bottom:8px; margin:0 0 14px; }
-    table { width:100%; border-collapse:collapse; }
-    td   { padding:7px 0; font-size:13px; vertical-align:top; }
-    .lbl { color:#5a5a5a; font-weight:bold; width:45%; }
-    .val { color:#E5E5E5; text-align:right; }
-    .tot { display:flex; justify-content:space-between; align-items:center; border-top:1px dashed rgba(198,161,91,0.25); padding-top:12px; margin-top:12px; }
-    .tot-lbl { font-size:13px; color:#A8A8A8; font-weight:bold; }
-    .tot-val { font-size:22px; color:#C6A15B; font-family:Georgia,serif; font-weight:bold; }
-    .ftr { background:#0A0A0A; padding:22px 40px; text-align:center; font-size:11px; color:#5a5a5a; border-top:1px solid rgba(255,255,255,0.05); }
+    body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#0F0F0F;color:#E5E5E5;margin:0;padding:40px 0}
+    .wrap{max-width:600px;margin:0 auto;background:#141414;border:1px solid rgba(198,161,91,.25);border-radius:12px;overflow:hidden}
+    .hdr{background:#0A0A0A;padding:28px 40px;border-bottom:2px solid #4D1022;text-align:center}
+    .logo{font-size:22px;font-weight:bold;letter-spacing:3px;color:#fff;font-family:Georgia,serif}
+    .logo span{color:#C6A15B}
+    .sub{font-size:10px;color:#5a5a5a;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+    .body{padding:36px 40px;line-height:1.65;font-size:14px}
+    h1{color:#fff;font-size:20px;font-weight:normal;font-family:Georgia,serif;margin:0 0 16px}
+    p{color:#A8A8A8;margin:0 0 18px}
+    .box{background:#1C1C1C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:24px;margin-bottom:28px}
+    h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C6A15B;border-bottom:1px solid rgba(198,161,91,.2);padding-bottom:8px;margin:0 0 14px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:7px 0;font-size:13px;vertical-align:top}
+    .lbl{color:#5a5a5a;font-weight:bold;width:45%}
+    .val{color:#E5E5E5;text-align:right}
+    .tot{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed rgba(198,161,91,.25);padding-top:12px;margin-top:12px}
+    .tot-lbl{font-size:13px;color:#A8A8A8;font-weight:bold}
+    .tot-val{font-size:22px;color:#C6A15B;font-family:Georgia,serif;font-weight:bold}
+    .ftr{background:#0A0A0A;padding:22px 40px;text-align:center;font-size:11px;color:#5a5a5a;border-top:1px solid rgba(255,255,255,.05)}
   </style>
 </head>
 <body>
@@ -290,42 +239,58 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
 </body>
 </html>`;
 
-  const mailOptions = {
-    from:    `"DriveGlow Detailing" <${EMAIL_FROM}>`,
-    to:      booking.email,       // always the customer's email from the form
-    subject,
-    text:    textBody,
-    html:    htmlBody,
-    // Attach PDF only if the file actually exists on disk
-    attachments: pdfFilePath && fs.existsSync(pdfFilePath)
-      ? [{ filename: `DriveGlow-Receipt-${booking.id}.pdf`, path: pdfFilePath }]
-      : []
-  };
+  // Build attachments — read PDF into Buffer so it works on every platform
+  const attachments = [];
+  if (pdfFilePath && fs.existsSync(pdfFilePath)) {
+    try {
+      const pdfContent = fs.readFileSync(pdfFilePath);
+      attachments.push({
+        filename: `DriveGlow-Receipt-${booking.id}.pdf`,
+        content:  pdfContent,
+      });
+    } catch (readErr) {
+      console.warn(`[EMAIL] Could not attach PDF (non-fatal): ${readErr.message}`);
+    }
+  }
 
-  console.log(`[EMAIL] Sending customer confirmation to: ${booking.email}`);
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`[EMAIL] ✅ Customer confirmation sent. MessageId: ${info.messageId}`);
-  return info;
+  console.log(`[EMAIL] Sending customer confirmation → ${booking.email}`);
+  const { data, error } = await resendClient.emails.send({
+    from:        `DriveGlow Detailing <${EMAIL_FROM}>`,
+    to:          [booking.email],
+    subject:     `DriveGlow – Booking Confirmed · ${booking.id}`,
+    text,
+    html,
+    attachments,
+  });
+
+  if (error) {
+    throw new Error(`Resend API error (customer): ${JSON.stringify(error)}`);
+  }
+
+  console.log(`[EMAIL] ✅ Customer confirmation sent. ID: ${data.id}`);
+  return data;
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL: OWNER NOTIFICATION
+//  EMAIL: OWNER NOTIFICATION  (via Resend)
 // ─────────────────────────────────────────────────────────────
 async function sendOwnerNotificationEmail(booking) {
-  const ownerEmail = EMAIL_USER;
-  if (!ownerEmail) {
-    throw new Error('Owner email not set. Configure EMAIL_USER environment variable.');
+  if (!resendClient) {
+    throw new Error('Resend client not initialised — RESEND_API_KEY is missing.');
+  }
+  if (!OWNER_EMAIL) {
+    throw new Error('OWNER_EMAIL environment variable is not set.');
+  }
+  if (!EMAIL_FROM) {
+    throw new Error('EMAIL_FROM environment variable is not set.');
   }
 
-  const transporter    = await getVerifiedTransporter();
   const formattedDate  = formatDateNice(booking.appointmentDate);
   const formattedTime  = formatTime12Hour(booking.appointmentTime);
   const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
   const address        = booking.address || buildAddress(booking);
 
-  const subject = `[DriveGlow] New Booking — ${booking.id} · ${booking.customerName}`;
-
-  const textBody = [
+  const text = [
     'New Booking Received — DriveGlow',
     '',
     `Booking ID    : ${booking.id}`,
@@ -341,25 +306,25 @@ async function sendOwnerNotificationEmail(booking) {
     `Booked At     : ${new Date(booking.createdAt).toLocaleString('en-IN')}`,
   ].join('\n');
 
-  const htmlBody = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <style>
-    body { font-family:Arial,sans-serif; background:#f5f5f5; color:#222; margin:0; padding:30px 0; }
-    .wrap { max-width:580px; margin:0 auto; background:#fff; border-radius:8px; overflow:hidden; border:1px solid #ddd; }
-    .hdr  { background:#4D1022; color:#fff; padding:20px 30px; }
-    .hdr h2 { margin:0; font-size:18px; }
-    .hdr p  { margin:4px 0 0; font-size:12px; color:rgba(255,255,255,0.7); }
-    .body { padding:24px 30px; }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    tr:nth-child(even) td { background:#f9f9f9; }
-    td { padding:10px 12px; border-bottom:1px solid #eee; vertical-align:top; }
-    .lbl { color:#888; font-weight:bold; width:40%; }
-    .val { color:#222; }
-    .badge { display:inline-block; background:#C6A15B; color:#fff; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:bold; }
-    .ftr { background:#fafafa; padding:14px 30px; font-size:12px; color:#aaa; border-top:1px solid #eee; text-align:center; }
+    body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;margin:0;padding:30px 0}
+    .wrap{max-width:580px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #ddd}
+    .hdr{background:#4D1022;color:#fff;padding:20px 30px}
+    .hdr h2{margin:0;font-size:18px}
+    .hdr p{margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.7)}
+    .body{padding:24px 30px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    tr:nth-child(even) td{background:#f9f9f9}
+    td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top}
+    .lbl{color:#888;font-weight:bold;width:40%}
+    .val{color:#222}
+    .badge{display:inline-block;background:#C6A15B;color:#fff;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+    .ftr{background:#fafafa;padding:14px 30px;font-size:12px;color:#aaa;border-top:1px solid #eee;text-align:center}
   </style>
 </head>
 <body>
@@ -388,16 +353,21 @@ async function sendOwnerNotificationEmail(booking) {
 </body>
 </html>`;
 
-  console.log(`[EMAIL] Sending owner notification to: ${ownerEmail}`);
-  const info = await transporter.sendMail({
-    from:    `"DriveGlow Booking System" <${EMAIL_FROM}>`,
-    to:      ownerEmail,          // always the business owner's email from EMAIL_USER
-    subject,
-    text:    textBody,
-    html:    htmlBody,
+  console.log(`[EMAIL] Sending owner notification → ${OWNER_EMAIL}`);
+  const { data, error } = await resendClient.emails.send({
+    from:    `DriveGlow Booking System <${EMAIL_FROM}>`,
+    to:      [OWNER_EMAIL],
+    subject: `[DriveGlow] New Booking — ${booking.id} · ${booking.customerName}`,
+    text,
+    html,
   });
-  console.log(`[EMAIL] ✅ Owner notification sent. MessageId: ${info.messageId}`);
-  return info;
+
+  if (error) {
+    throw new Error(`Resend API error (owner): ${JSON.stringify(error)}`);
+  }
+
+  console.log(`[EMAIL] ✅ Owner notification sent. ID: ${data.id}`);
+  return data;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -462,13 +432,13 @@ app.post('/api/bookings', async (req, res) => {
 
     newBooking.address = buildAddress(newBooking);
 
-    // ── Persist booking first (always, regardless of email) ───
+    // ── Save booking FIRST — always, regardless of email ──────
     const bookings = readBookings();
     bookings.push(newBooking);
     writeBookings(bookings);
     console.log(`[BOOKING] ✅ Created: ${newBooking.id} for ${newBooking.customerName} <${newBooking.email}>`);
 
-    // ── Generate PDF receipt (optional, non-fatal) ────────────
+    // ── Generate PDF receipt (non-fatal) ──────────────────────
     const pdfFileName = `DriveGlow-Receipt-${newBooking.id}.pdf`;
     const pdfFilePath = path.join(RECEIPTS_DIR, pdfFileName);
     let pdfReady = false;
@@ -478,12 +448,12 @@ app.post('/api/bookings', async (req, res) => {
       generateReceiptPDF(newBooking, pdfStream);
       await new Promise((resolve, reject) => {
         pdfStream.on('finish', resolve);
-        pdfStream.on('error', reject);
+        pdfStream.on('error',  reject);
       });
       pdfReady = true;
       console.log(`[PDF] ✅ Receipt generated: ${pdfFileName}`);
     } catch (pdfErr) {
-      console.error('[PDF] ⚠️  Receipt generation failed (non-fatal):', pdfErr.message);
+      console.error(`[PDF] ⚠️  Receipt generation failed (non-fatal): ${pdfErr.message}`);
     }
 
     // ── Send customer confirmation email (non-fatal) ──────────
@@ -495,7 +465,7 @@ app.post('/api/bookings', async (req, res) => {
       emailSent = true;
     } catch (err) {
       emailError = err.message;
-      console.error(`[EMAIL] ❌ Customer confirmation failed for ${newBooking.email}:`);
+      console.error(`[EMAIL] ❌ Customer confirmation FAILED for ${newBooking.email}`);
       console.error(`        Reason: ${err.message}`);
     }
 
@@ -506,11 +476,11 @@ app.post('/api/bookings', async (req, res) => {
       await sendOwnerNotificationEmail(newBooking);
       ownerNotified = true;
     } catch (err) {
-      console.error(`[EMAIL] ❌ Owner notification failed:`);
+      console.error(`[EMAIL] ❌ Owner notification FAILED`);
       console.error(`        Reason: ${err.message}`);
     }
 
-    // ── Always return 201 — booking succeeded regardless of email
+    // ── Always return 201 — booking always succeeds ───────────
     return res.status(201).json({
       message:       'Booking completed successfully.',
       booking:       newBooking,
@@ -549,7 +519,7 @@ app.get('/api/bookings/:id', (req, res) => {
   }
 });
 
-// GET /api/bookings/:id/receipt — PDF receipt download
+// GET /api/bookings/:id/receipt — PDF download
 app.get('/api/bookings/:id/receipt', (req, res) => {
   try {
     const bookings = readBookings();
@@ -583,14 +553,13 @@ app.post('/api/bookings/:id/resend-email', async (req, res) => {
     const pdfFileName = `DriveGlow-Receipt-${booking.id}.pdf`;
     const pdfFilePath = path.join(RECEIPTS_DIR, pdfFileName);
 
-    // Re-generate PDF if missing
     if (!fs.existsSync(pdfFilePath)) {
       try {
         const pdfStream = fs.createWriteStream(pdfFilePath);
         generateReceiptPDF(booking, pdfStream);
         await new Promise((resolve, reject) => {
           pdfStream.on('finish', resolve);
-          pdfStream.on('error', reject);
+          pdfStream.on('error',  reject);
         });
       } catch (pdfErr) {
         console.error('[RESEND/PDF] PDF generation failed (non-fatal):', pdfErr.message);
@@ -619,7 +588,6 @@ app.put('/api/bookings/:id', (req, res) => {
       updatedAt: new Date().toISOString()
     };
     merged.address = buildAddress(merged);
-
     bookings[index] = merged;
     writeBookings(bookings);
     return res.json({ message: 'Booking updated successfully.', booking: merged });
@@ -629,7 +597,7 @@ app.put('/api/bookings/:id', (req, res) => {
   }
 });
 
-// POST /api/bookings/:id/status — Update status only
+// POST /api/bookings/:id/status — Status update
 app.post('/api/bookings/:id/status', (req, res) => {
   try {
     const { status } = req.body;
@@ -651,7 +619,7 @@ app.post('/api/bookings/:id/status', (req, res) => {
   }
 });
 
-// DELETE /api/bookings/:id — Delete booking
+// DELETE /api/bookings/:id
 app.delete('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
@@ -672,23 +640,21 @@ app.use('/api/*', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  NETWORK HELPERS — local IP display
+//  NETWORK HELPERS
 // ─────────────────────────────────────────────────────────────
 function getLocalIPAddresses() {
   const ifaces = os.networkInterfaces();
   const list   = [];
   for (const name in ifaces) {
     for (const net of ifaces[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
-        list.push({ name, address: net.address });
-      }
+      if (net.family === 'IPv4' && !net.internal) list.push({ name, address: net.address });
     }
   }
   return list;
 }
 
 // ─────────────────────────────────────────────────────────────
-//  START SERVER — single app.listen() call
+//  START SERVER
 // ─────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -696,15 +662,15 @@ app.listen(PORT, '0.0.0.0', () => {
 
   console.log('\n==================================================');
   console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
-  console.log(`  Environment: ${isProduction ? 'PRODUCTION (Railway)' : 'DEVELOPMENT'}`);
+  console.log(`  Environment : ${isProduction ? 'PRODUCTION (Railway)' : 'DEVELOPMENT'}`);
+  console.log(`  Email API   : Resend`);
   console.log('==================================================');
 
   if (isProduction) {
-    console.log('  Server is running on Railway.');
     console.log('  Access your site at your Railway public URL.');
   } else {
-    console.log(`  Laptop:  http://localhost:${PORT}`);
-    console.log('  Mobile Phone (same Wi-Fi):');
+    console.log(`  Laptop : http://localhost:${PORT}`);
+    console.log('  Mobile (same Wi-Fi):');
     ipList.forEach(ip => {
       const n = ip.name.toLowerCase();
       const label =
@@ -716,11 +682,8 @@ app.listen(PORT, '0.0.0.0', () => {
   }
 
   console.log('--------------------------------------------------');
-  console.log('  EMAIL CONFIG:');
-  console.log(`  HOST   : ${EMAIL_HOST   || '⚠️  NOT SET'}`);
-  console.log(`  PORT   : ${EMAIL_PORT}`);
-  console.log(`  SECURE : ${EMAIL_SECURE}`);
-  console.log(`  USER   : ${EMAIL_USER   || '⚠️  NOT SET'}`);
-  console.log(`  PASS   : ${EMAIL_PASS   ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  RESEND_API_KEY : ${RESEND_API_KEY ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  EMAIL_FROM     : ${EMAIL_FROM     || '⚠️  NOT SET'}`);
+  console.log(`  OWNER_EMAIL    : ${OWNER_EMAIL    || '⚠️  NOT SET'}`);
   console.log('==================================================\n');
 });
