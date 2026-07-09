@@ -3,7 +3,15 @@
 //  Email: Resend API (works on Railway, Render, Fly.io, localhost)
 //  Booking: Express + JSON file store
 // ─────────────────────────────────────────────────────────────
-require('dotenv').config();
+
+// Load .env ONLY in local development.
+// On Railway/Render/Fly.io, env vars are injected by the platform.
+// dotenv v17 (dotenvx) overrides process.env by default — so we must
+// NEVER call dotenv.config() in production or it overwrites real values.
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ override: false }); // override:false = extra safety
+  console.log('[ENV] Loaded .env file (development mode)');
+}
 
 const express  = require('express');
 const cors     = require('cors');
@@ -50,25 +58,37 @@ if (!fs.existsSync(RECEIPTS_DIR)) {
 //  RESEND EMAIL CONFIGURATION
 // ─────────────────────────────────────────────────────────────
 
-// Read env vars once at startup
+// ── Read and validate env vars once at startup ───────────────
 const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
 const EMAIL_FROM     = (process.env.EMAIL_FROM     || '').trim();
 const OWNER_EMAIL    = (process.env.OWNER_EMAIL    || '').trim();
 
-// Log config at startup (no secrets exposed)
-console.log('\n[EMAIL CONFIG — Resend]');
-console.log(`  RESEND_API_KEY : ${RESEND_API_KEY ? '✅ SET (' + RESEND_API_KEY.length + ' chars)' : '⚠️  NOT SET'}`);
-console.log(`  EMAIL_FROM     : ${EMAIL_FROM  || '⚠️  NOT SET'}`);
-console.log(`  OWNER_EMAIL    : ${OWNER_EMAIL || '⚠️  NOT SET'}`);
+// ── Startup diagnostic — safe (never prints actual key value) ─
+console.log('\n[ENV DIAGNOSTIC]');
+console.log(`  NODE_ENV       : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
+console.log(`  RESEND_API_KEY : ${RESEND_API_KEY
+  ? '✅ PRESENT (' + RESEND_API_KEY.length + ' chars, starts with ' + RESEND_API_KEY.slice(0, 3) + '...)'
+  : '❌ MISSING — emails will not be sent'}`);
+console.log(`  EMAIL_FROM     : ${EMAIL_FROM  || '❌ MISSING'}`);
+console.log(`  OWNER_EMAIL    : ${OWNER_EMAIL || '❌ MISSING'}`);
+
 if (!RESEND_API_KEY || !EMAIL_FROM || !OWNER_EMAIL) {
-  console.warn('  ⚠️  One or more email env vars are missing.');
-  console.warn('  Railway: Dashboard → your service → Variables');
-  console.warn('  Required: RESEND_API_KEY, EMAIL_FROM, OWNER_EMAIL');
+  console.error('[ENV] ❌ One or more required email variables are missing.');
+  console.error('[ENV]    If on Railway: Dashboard → your service → Variables tab');
+  console.error('[ENV]    Required: RESEND_API_KEY, EMAIL_FROM, OWNER_EMAIL');
+  console.error('[ENV]    Do NOT add a .env file to your repo — Railway injects vars directly.');
 }
 console.log('');
 
-// Initialise Resend client once — null if API key is missing
-const resendClient = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+// Validate the API key is not a placeholder
+const _isPlaceholder = RESEND_API_KEY.startsWith('your_') || RESEND_API_KEY === '';
+if (_isPlaceholder) {
+  console.error('[ENV] ❌ RESEND_API_KEY looks like a placeholder (starts with "your_").');
+  console.error('[ENV]    Set the real API key from resend.com/api-keys in Railway Variables.');
+}
+
+// Initialise Resend client — null when key is missing or a placeholder
+const resendClient = (RESEND_API_KEY && !_isPlaceholder) ? new Resend(RESEND_API_KEY) : null;
 
 // ─────────────────────────────────────────────────────────────
 //  DATABASE HELPERS
