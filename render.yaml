@@ -7,8 +7,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        generateValue: false
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
