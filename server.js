@@ -57,18 +57,18 @@ let _transporter = null;
 function getMailTransporter() {
   if (_transporter) return _transporter;
 
-  console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
-  console.log("EMAIL_USER:", process.env.EMAIL_USER);
-  console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "FOUND" : "MISSING");
-
-  const host = process.env.EMAIL_HOST;
-  const port = parseInt(process.env.EMAIL_PORT, 10) || 587;
+  const host   = process.env.EMAIL_HOST;
+  const port   = parseInt(process.env.EMAIL_PORT, 10) || 587;
   const secure = process.env.EMAIL_SECURE === 'true';
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
+  const user   = process.env.EMAIL_USER;
+  // Google App Passwords are displayed with spaces — strip them before use
+  const pass   = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+
+  console.log(`[EMAIL] Host: ${host || 'NOT SET'}, User: ${user || 'NOT SET'}, Pass: ${pass ? 'SET' : 'MISSING'}`);
 
   if (!host || !user || !pass) {
-    console.warn('[EMAIL] SMTP credentials missing — emails will be skipped.');
+    console.warn('[EMAIL] SMTP credentials missing or incomplete — emails will be skipped.');
+    console.warn('[EMAIL] If on Render: add EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS, EMAIL_FROM in the Render dashboard → Environment.');
     return null;
   }
 
@@ -76,17 +76,11 @@ function getMailTransporter() {
     host,
     port,
     secure,
-    family: 4,
-    auth: {
-      user,
-      pass,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000,
   });
 
   return _transporter;
