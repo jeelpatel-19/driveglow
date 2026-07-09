@@ -1,24 +1,24 @@
 // ─────────────────────────────────────────────────────────────
 //  DriveGlow — Production-Ready Server
-//  Email: Resend API (works on Railway, Render, Fly.io, localhost)
-//  Booking: Express + JSON file store
+//  Email: Nodemailer + Gmail SMTP
+//  Works on: Railway, Render, Fly.io, localhost
 // ─────────────────────────────────────────────────────────────
 
 // Load .env ONLY in local development.
-// On Railway/Render/Fly.io, env vars are injected by the platform.
+// On Railway/Render/Fly.io env vars are injected by the platform.
 // dotenv v17 (dotenvx) overrides process.env by default — so we must
 // NEVER call dotenv.config() in production or it overwrites real values.
 if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ override: false }); // override:false = extra safety
+  require('dotenv').config({ override: false });
   console.log('[ENV] Loaded .env file (development mode)');
 }
 
-const express  = require('express');
-const cors     = require('cors');
-const fs       = require('fs');
-const path     = require('path');
-const os       = require('os');
-const { Resend } = require('resend');
+const express    = require('express');
+const cors       = require('cors');
+const fs         = require('fs');
+const path       = require('path');
+const os         = require('os');
+const nodemailer = require('nodemailer');
 
 const { generateReceiptPDF } = require('./receipt');
 
@@ -55,40 +55,43 @@ if (!fs.existsSync(RECEIPTS_DIR)) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  RESEND EMAIL CONFIGURATION
+//  EMAIL CONFIGURATION — Gmail SMTP via Nodemailer
 // ─────────────────────────────────────────────────────────────
 
-// ── Read and validate env vars once at startup ───────────────
-const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
-const EMAIL_FROM     = (process.env.EMAIL_FROM     || '').trim();
-const OWNER_EMAIL    = (process.env.OWNER_EMAIL    || '').trim();
+// Read env vars once at startup.
+// Gmail App Passwords are shown with spaces — strip them before use.
+const EMAIL_USER  = (process.env.EMAIL_USER  || '').trim();
+const EMAIL_PASS  = (process.env.EMAIL_PASS  || '').replace(/\s+/g, '');
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || EMAIL_USER).trim();
 
-// ── Startup diagnostic — safe (never prints actual key value) ─
+// ── Startup diagnostic (safe — never prints actual password) ──
 console.log('\n[ENV DIAGNOSTIC]');
-console.log(`  NODE_ENV       : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
-console.log(`  RESEND_API_KEY : ${RESEND_API_KEY
-  ? '✅ PRESENT (' + RESEND_API_KEY.length + ' chars, starts with ' + RESEND_API_KEY.slice(0, 3) + '...)'
-  : '❌ MISSING — emails will not be sent'}`);
-console.log(`  EMAIL_FROM     : ${EMAIL_FROM  || '❌ MISSING'}`);
-console.log(`  OWNER_EMAIL    : ${OWNER_EMAIL || '❌ MISSING'}`);
+console.log(`  NODE_ENV    : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
+console.log(`  EMAIL_USER  : ${EMAIL_USER || '❌ MISSING'}`);
+console.log(`  EMAIL_PASS  : ${EMAIL_PASS  ? `✅ PRESENT (${EMAIL_PASS.length} chars)` : '❌ MISSING'}`);
+console.log(`  OWNER_EMAIL : ${OWNER_EMAIL || '❌ MISSING (will fall back to EMAIL_USER)'}`);
 
-if (!RESEND_API_KEY || !EMAIL_FROM || !OWNER_EMAIL) {
-  console.error('[ENV] ❌ One or more required email variables are missing.');
-  console.error('[ENV]    If on Railway: Dashboard → your service → Variables tab');
-  console.error('[ENV]    Required: RESEND_API_KEY, EMAIL_FROM, OWNER_EMAIL');
-  console.error('[ENV]    Do NOT add a .env file to your repo — Railway injects vars directly.');
+if (!EMAIL_USER || !EMAIL_PASS) {
+  console.error('[ENV] ❌ EMAIL_USER or EMAIL_PASS is missing — emails will not be sent.');
+  console.error('[ENV]    Railway: Dashboard → your service → Variables tab');
+  console.error('[ENV]    EMAIL_USER = your Gmail address');
+  console.error('[ENV]    EMAIL_PASS = 16-char Gmail App Password (no spaces)');
+  console.error('[ENV]    Generate one at: myaccount.google.com/apppasswords');
 }
 console.log('');
 
-// Validate the API key is not a placeholder
-const _isPlaceholder = RESEND_API_KEY.startsWith('your_') || RESEND_API_KEY === '';
-if (_isPlaceholder) {
-  console.error('[ENV] ❌ RESEND_API_KEY looks like a placeholder (starts with "your_").');
-  console.error('[ENV]    Set the real API key from resend.com/api-keys in Railway Variables.');
-}
-
-// Initialise Resend client — null when key is missing or a placeholder
-const resendClient = (RESEND_API_KEY && !_isPlaceholder) ? new Resend(RESEND_API_KEY) : null;
+// ── Create Nodemailer transporter (once, reused for all sends) ──
+// Uses Gmail's built-in service preset — no host/port/TLS config needed.
+// Works on all cloud platforms including Railway.
+const transporter = (EMAIL_USER && EMAIL_PASS)
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+      },
+    })
+  : null;
 
 // ─────────────────────────────────────────────────────────────
 //  DATABASE HELPERS
@@ -158,17 +161,14 @@ function buildAddress(b) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL: CUSTOMER CONFIRMATION  (via Resend)
+//  EMAIL: CUSTOMER CONFIRMATION  (Gmail SMTP via Nodemailer)
 // ─────────────────────────────────────────────────────────────
 async function sendConfirmationEmail(booking, pdfFilePath) {
-  if (!resendClient) {
-    throw new Error('Resend client not initialised — RESEND_API_KEY is missing.');
+  if (!transporter) {
+    throw new Error('Gmail transporter not initialised — EMAIL_USER or EMAIL_PASS is missing.');
   }
   if (!booking.email) {
     throw new Error('Customer email address is missing from booking.');
-  }
-  if (!EMAIL_FROM) {
-    throw new Error('EMAIL_FROM environment variable is not set.');
   }
 
   const formattedDate  = formatDateNice(booking.appointmentDate);
@@ -176,7 +176,6 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
   const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
   const address        = booking.address || buildAddress(booking);
 
-  // Build plain-text fallback
   const text = [
     `Hello ${booking.customerName},`,
     '',
@@ -194,10 +193,9 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
     'Thank you for choosing DriveGlow.',
     '',
     'Regards,',
-    'DriveGlow Premium Car Detailing'
+    'DriveGlow Premium Car Detailing',
   ].join('\n');
 
-  // Build HTML email
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,50 +257,34 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
 </body>
 </html>`;
 
-  // Build attachments — read PDF into Buffer so it works on every platform
+  // Build attachments array — attach PDF if it exists on disk
   const attachments = [];
   if (pdfFilePath && fs.existsSync(pdfFilePath)) {
-    try {
-      const pdfContent = fs.readFileSync(pdfFilePath);
-      attachments.push({
-        filename: `DriveGlow-Receipt-${booking.id}.pdf`,
-        content:  pdfContent,
-      });
-    } catch (readErr) {
-      console.warn(`[EMAIL] Could not attach PDF (non-fatal): ${readErr.message}`);
-    }
+    attachments.push({
+      filename: `DriveGlow-Receipt-${booking.id}.pdf`,
+      path:     pdfFilePath,
+    });
   }
 
   console.log(`[EMAIL] Sending customer confirmation → ${booking.email}`);
-  const { data, error } = await resendClient.emails.send({
-    from:        `DriveGlow Detailing <${EMAIL_FROM}>`,
-    to:          [booking.email],
+  const info = await transporter.sendMail({
+    from:        `"DriveGlow Detailing" <${EMAIL_USER}>`,
+    to:          booking.email,
     subject:     `DriveGlow – Booking Confirmed · ${booking.id}`,
     text,
     html,
     attachments,
   });
-
-  if (error) {
-    throw new Error(`Resend API error (customer): ${JSON.stringify(error)}`);
-  }
-
-  console.log(`[EMAIL] ✅ Customer confirmation sent. ID: ${data.id}`);
-  return data;
+  console.log(`[EMAIL] ✅ Customer confirmation sent (messageId: ${info.messageId})`);
+  return info;
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL: OWNER NOTIFICATION  (via Resend)
+//  EMAIL: OWNER NOTIFICATION  (Gmail SMTP via Nodemailer)
 // ─────────────────────────────────────────────────────────────
 async function sendOwnerNotificationEmail(booking) {
-  if (!resendClient) {
-    throw new Error('Resend client not initialised — RESEND_API_KEY is missing.');
-  }
-  if (!OWNER_EMAIL) {
-    throw new Error('OWNER_EMAIL environment variable is not set.');
-  }
-  if (!EMAIL_FROM) {
-    throw new Error('EMAIL_FROM environment variable is not set.');
+  if (!transporter) {
+    throw new Error('Gmail transporter not initialised — EMAIL_USER or EMAIL_PASS is missing.');
   }
 
   const formattedDate  = formatDateNice(booking.appointmentDate);
@@ -374,20 +356,15 @@ async function sendOwnerNotificationEmail(booking) {
 </html>`;
 
   console.log(`[EMAIL] Sending owner notification → ${OWNER_EMAIL}`);
-  const { data, error } = await resendClient.emails.send({
-    from:    `DriveGlow Booking System <${EMAIL_FROM}>`,
-    to:      [OWNER_EMAIL],
+  const info = await transporter.sendMail({
+    from:    `"DriveGlow Booking System" <${EMAIL_USER}>`,
+    to:      OWNER_EMAIL,
     subject: `[DriveGlow] New Booking — ${booking.id} · ${booking.customerName}`,
     text,
     html,
   });
-
-  if (error) {
-    throw new Error(`Resend API error (owner): ${JSON.stringify(error)}`);
-  }
-
-  console.log(`[EMAIL] ✅ Owner notification sent. ID: ${data.id}`);
-  return data;
+  console.log(`[EMAIL] ✅ Owner notification sent (messageId: ${info.messageId})`);
+  return info;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -447,12 +424,12 @@ app.post('/api/bookings', async (req, res) => {
       appointmentDate,
       appointmentTime,
       status:              'Confirmed',
-      createdAt:           new Date().toISOString()
+      createdAt:           new Date().toISOString(),
     };
 
     newBooking.address = buildAddress(newBooking);
 
-    // ── Save booking FIRST — always, regardless of email ──────
+    // ── Save booking FIRST — always, before attempting email ──
     const bookings = readBookings();
     bookings.push(newBooking);
     writeBookings(bookings);
@@ -496,7 +473,7 @@ app.post('/api/bookings', async (req, res) => {
       await sendOwnerNotificationEmail(newBooking);
       ownerNotified = true;
     } catch (err) {
-      console.error(`[EMAIL] ❌ Owner notification FAILED`);
+      console.error('[EMAIL] ❌ Owner notification FAILED');
       console.error(`        Reason: ${err.message}`);
     }
 
@@ -605,9 +582,9 @@ app.put('/api/bookings/:id', (req, res) => {
       ...bookings[index],
       ...req.body,
       price:     req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
-    merged.address = buildAddress(merged);
+    merged.address  = buildAddress(merged);
     bookings[index] = merged;
     writeBookings(bookings);
     return res.json({ message: 'Booking updated successfully.', booking: merged });
@@ -683,7 +660,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('\n==================================================');
   console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
   console.log(`  Environment : ${isProduction ? 'PRODUCTION (Railway)' : 'DEVELOPMENT'}`);
-  console.log(`  Email API   : Resend`);
+  console.log('  Email       : Gmail SMTP via Nodemailer');
   console.log('==================================================');
 
   if (isProduction) {
@@ -702,8 +679,8 @@ app.listen(PORT, '0.0.0.0', () => {
   }
 
   console.log('--------------------------------------------------');
-  console.log(`  RESEND_API_KEY : ${RESEND_API_KEY ? '✅ SET' : '⚠️  NOT SET'}`);
-  console.log(`  EMAIL_FROM     : ${EMAIL_FROM     || '⚠️  NOT SET'}`);
-  console.log(`  OWNER_EMAIL    : ${OWNER_EMAIL    || '⚠️  NOT SET'}`);
+  console.log(`  EMAIL_USER  : ${EMAIL_USER  || '⚠️  NOT SET'}`);
+  console.log(`  EMAIL_PASS  : ${EMAIL_PASS  ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  OWNER_EMAIL : ${OWNER_EMAIL || '⚠️  NOT SET'}`);
   console.log('==================================================\n');
 });
