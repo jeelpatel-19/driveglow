@@ -70,7 +70,7 @@ console.log(`  EMAIL_PASS   : ${EMAIL_PASS   ? '✅ SET (' + EMAIL_PASS.length +
 console.log(`  EMAIL_FROM   : ${EMAIL_FROM   || '⚠️  NOT SET'}`);
 if (!EMAIL_HOST || !EMAIL_USER || !EMAIL_PASS) {
   console.warn('  ⚠️  One or more EMAIL env vars are missing.');
-  console.warn('  If on Render: Dashboard → Environment → add EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS, EMAIL_FROM');
+  console.warn('  If on Railway: Dashboard → your service → Variables → add EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS, EMAIL_FROM');
 }
 console.log('');
 
@@ -696,12 +696,12 @@ app.listen(PORT, '0.0.0.0', () => {
 
   console.log('\n==================================================');
   console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
-  console.log(`  Environment: ${isProduction ? 'PRODUCTION (Render)' : 'DEVELOPMENT'}`);
+  console.log(`  Environment: ${isProduction ? 'PRODUCTION (Railway)' : 'DEVELOPMENT'}`);
   console.log('==================================================');
 
   if (isProduction) {
-    console.log('  Server is running on Render.');
-    console.log('  Access your site at your Render public URL.');
+    console.log('  Server is running on Railway.');
+    console.log('  Access your site at your Railway public URL.');
   } else {
     console.log(`  Laptop:  http://localhost:${PORT}`);
     console.log('  Mobile Phone (same Wi-Fi):');
