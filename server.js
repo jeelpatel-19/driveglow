@@ -13,18 +13,18 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('[ENV] Loaded .env file (development mode)');
 }
 
-const express    = require('express');
-const cors       = require('cors');
-const fs         = require('fs');
-const path       = require('path');
-const os         = require('os');
-const dns        = require('dns');        // needed for IPv4-only SMTP on Railway
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const dns = require('dns');        // needed for IPv4-only SMTP on Railway
 const nodemailer = require('nodemailer');
 
 const { generateReceiptPDF } = require('./receipt');
 
 // ─── App & Port ───────────────────────────────────────────────
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Global crash guards ──────────────────────────────────────
@@ -45,7 +45,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── File Paths ───────────────────────────────────────────────
-const DB_FILE      = path.join(__dirname, 'bookings.json');
+const DB_FILE = path.join(__dirname, 'bookings.json');
 const RECEIPTS_DIR = path.join(__dirname, 'logs', 'receipts');
 
 if (!fs.existsSync(DB_FILE)) {
@@ -61,15 +61,15 @@ if (!fs.existsSync(RECEIPTS_DIR)) {
 
 // Read env vars once at startup.
 // Gmail App Passwords are shown with spaces — strip them before use.
-const EMAIL_USER  = (process.env.EMAIL_USER  || '').trim();
-const EMAIL_PASS  = (process.env.EMAIL_PASS  || '').replace(/\s+/g, '');
+const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
+const EMAIL_PASS = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 const OWNER_EMAIL = (process.env.OWNER_EMAIL || EMAIL_USER).trim();
 
 // ── Startup diagnostic (safe — never prints actual password) ──
 console.log('\n[ENV DIAGNOSTIC]');
 console.log(`  NODE_ENV    : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
 console.log(`  EMAIL_USER  : ${EMAIL_USER || '❌ MISSING'}`);
-console.log(`  EMAIL_PASS  : ${EMAIL_PASS  ? `✅ PRESENT (${EMAIL_PASS.length} chars)` : '❌ MISSING'}`);
+console.log(`  EMAIL_PASS  : ${EMAIL_PASS ? `✅ PRESENT (${EMAIL_PASS.length} chars)` : '❌ MISSING'}`);
 console.log(`  OWNER_EMAIL : ${OWNER_EMAIL || '❌ MISSING (will fall back to EMAIL_USER)'}`);
 
 if (!EMAIL_USER || !EMAIL_PASS) {
@@ -84,22 +84,18 @@ console.log('');
 // ── Create Nodemailer transporter (once, reused for all sends) ──
 // Uses Gmail's built-in service preset — no host/port/TLS config needed.
 // Works on all cloud platforms including Railway.
-const transporter = (EMAIL_USER && EMAIL_PASS)
-  ? nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
-      },
-      // Railway's network does not support outbound IPv6.
-      // Gmail SMTP resolves to IPv6 by default → ENETUNREACH.
-      // Force IPv4 with both settings for maximum compatibility.
-      family: 4,
-      lookup: (hostname, options, callback) => {
-        dns.lookup(hostname, { family: 4 }, callback);
-      },
-    })
-  : null;
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  family: 4,
+  connectionTimeout: 10000,
+  socketTimeout: 10000
+});
 
 // ─────────────────────────────────────────────────────────────
 //  DATABASE HELPERS
@@ -149,7 +145,7 @@ function formatTime12Hour(timeStr) {
   if (!timeStr) return 'N/A';
   const parts = timeStr.split(':');
   if (parts.length < 2) return timeStr;
-  let hours  = parseInt(parts[0], 10);
+  let hours = parseInt(parts[0], 10);
   const mins = parts[1];
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
@@ -159,12 +155,12 @@ function formatTime12Hour(timeStr) {
 function buildAddress(b) {
   return [
     b.flatNumber ? `Flat/Apt ${b.flatNumber}` : '',
-    b.houseName  || '',
-    b.street     || '',
-    b.landmark   ? `Near ${b.landmark}` : '',
-    b.city       || '',
-    b.state      || '',
-    b.pincode    || ''
+    b.houseName || '',
+    b.street || '',
+    b.landmark ? `Near ${b.landmark}` : '',
+    b.city || '',
+    b.state || '',
+    b.pincode || ''
   ].filter(p => typeof p === 'string' && p.trim() !== '').join(', ');
 }
 
@@ -179,10 +175,10 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
     throw new Error('Customer email address is missing from booking.');
   }
 
-  const formattedDate  = formatDateNice(booking.appointmentDate);
-  const formattedTime  = formatTime12Hour(booking.appointmentTime);
+  const formattedDate = formatDateNice(booking.appointmentDate);
+  const formattedTime = formatTime12Hour(booking.appointmentTime);
   const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
-  const address        = booking.address || buildAddress(booking);
+  const address = booking.address || buildAddress(booking);
 
   const text = [
     `Hello ${booking.customerName},`,
@@ -270,15 +266,15 @@ async function sendConfirmationEmail(booking, pdfFilePath) {
   if (pdfFilePath && fs.existsSync(pdfFilePath)) {
     attachments.push({
       filename: `DriveGlow-Receipt-${booking.id}.pdf`,
-      path:     pdfFilePath,
+      path: pdfFilePath,
     });
   }
 
   console.log(`[EMAIL] Sending customer confirmation → ${booking.email}`);
   const info = await transporter.sendMail({
-    from:        `"DriveGlow Detailing" <${EMAIL_USER}>`,
-    to:          booking.email,
-    subject:     `DriveGlow – Booking Confirmed · ${booking.id}`,
+    from: `"DriveGlow Detailing" <${EMAIL_USER}>`,
+    to: booking.email,
+    subject: `DriveGlow – Booking Confirmed · ${booking.id}`,
     text,
     html,
     attachments,
@@ -295,10 +291,10 @@ async function sendOwnerNotificationEmail(booking) {
     throw new Error('Gmail transporter not initialised — EMAIL_USER or EMAIL_PASS is missing.');
   }
 
-  const formattedDate  = formatDateNice(booking.appointmentDate);
-  const formattedTime  = formatTime12Hour(booking.appointmentTime);
+  const formattedDate = formatDateNice(booking.appointmentDate);
+  const formattedTime = formatTime12Hour(booking.appointmentTime);
   const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
-  const address        = booking.address || buildAddress(booking);
+  const address = booking.address || buildAddress(booking);
 
   const text = [
     'New Booking Received — DriveGlow',
@@ -365,8 +361,8 @@ async function sendOwnerNotificationEmail(booking) {
 
   console.log(`[EMAIL] Sending owner notification → ${OWNER_EMAIL}`);
   const info = await transporter.sendMail({
-    from:    `"DriveGlow Booking System" <${EMAIL_USER}>`,
-    to:      OWNER_EMAIL,
+    from: `"DriveGlow Booking System" <${EMAIL_USER}>`,
+    to: OWNER_EMAIL,
     subject: `[DriveGlow] New Booking — ${booking.id} · ${booking.customerName}`,
     text,
     html,
@@ -391,15 +387,15 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Validate required fields ──────────────────────────────
     const missing = [];
-    if (!customerName)    missing.push('Customer Name');
-    if (!phone)           missing.push('Phone Number');
-    if (!email)           missing.push('Email Address');
-    if (!packageName)     missing.push('Package');
-    if (!price)           missing.push('Price');
+    if (!customerName) missing.push('Customer Name');
+    if (!phone) missing.push('Phone Number');
+    if (!email) missing.push('Email Address');
+    if (!packageName) missing.push('Package');
+    if (!price) missing.push('Price');
     if (!appointmentDate) missing.push('Appointment Date');
     if (!appointmentTime) missing.push('Appointment Time');
-    if (!vehicleBrand)    missing.push('Vehicle Brand');
-    if (!vehicleModel)    missing.push('Vehicle Model');
+    if (!vehicleBrand) missing.push('Vehicle Brand');
+    if (!vehicleModel) missing.push('Vehicle Model');
 
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}.` });
@@ -411,28 +407,28 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Build booking object ──────────────────────────────────
     const newBooking = {
-      id:                  generateBookingID(),
-      customerName:        customerName.trim(),
-      phone:               phone.trim(),
-      email:               email.trim().toLowerCase(),
-      houseName:           (houseName           || '').trim(),
-      flatNumber:          (flatNumber          || '').trim(),
-      street:              (street              || '').trim(),
-      landmark:            (landmark            || '').trim(),
-      city:                (city                || '').trim(),
-      state:               (state               || '').trim(),
-      pincode:             (pincode             || '').trim(),
-      address:             '',
-      vehicleBrand:        (vehicleBrand        || '').trim(),
-      vehicleModel:        (vehicleModel        || '').trim(),
-      vehicleType:         (vehicleType         || '').trim(),
+      id: generateBookingID(),
+      customerName: customerName.trim(),
+      phone: phone.trim(),
+      email: email.trim().toLowerCase(),
+      houseName: (houseName || '').trim(),
+      flatNumber: (flatNumber || '').trim(),
+      street: (street || '').trim(),
+      landmark: (landmark || '').trim(),
+      city: (city || '').trim(),
+      state: (state || '').trim(),
+      pincode: (pincode || '').trim(),
+      address: '',
+      vehicleBrand: (vehicleBrand || '').trim(),
+      vehicleModel: (vehicleModel || '').trim(),
+      vehicleType: (vehicleType || '').trim(),
       vehicleRegistration: (vehicleRegistration || '').trim().toUpperCase(),
-      packageName:         packageName.trim(),
-      price:               parseFloat(price),
+      packageName: packageName.trim(),
+      price: parseFloat(price),
       appointmentDate,
       appointmentTime,
-      status:              'Confirmed',
-      createdAt:           new Date().toISOString(),
+      status: 'Confirmed',
+      createdAt: new Date().toISOString(),
     };
 
     newBooking.address = buildAddress(newBooking);
@@ -453,7 +449,7 @@ app.post('/api/bookings', async (req, res) => {
       generateReceiptPDF(newBooking, pdfStream);
       await new Promise((resolve, reject) => {
         pdfStream.on('finish', resolve);
-        pdfStream.on('error',  reject);
+        pdfStream.on('error', reject);
       });
       pdfReady = true;
       console.log(`[PDF] ✅ Receipt generated: ${pdfFileName}`);
@@ -462,7 +458,7 @@ app.post('/api/bookings', async (req, res) => {
     }
 
     // ── Send customer confirmation email (non-fatal) ──────────
-    let emailSent  = false;
+    let emailSent = false;
     let emailError = null;
 
     try {
@@ -487,8 +483,8 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Always return 201 — booking always succeeds ───────────
     return res.status(201).json({
-      message:       'Booking completed successfully.',
-      booking:       newBooking,
+      message: 'Booking completed successfully.',
+      booking: newBooking,
       emailSent,
       emailError,
       ownerNotified,
@@ -516,7 +512,7 @@ app.get('/api/bookings', (req, res) => {
 app.get('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
-    const booking  = bookings.find(b => b.id === req.params.id);
+    const booking = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     return res.json(booking);
   } catch (err) {
@@ -528,7 +524,7 @@ app.get('/api/bookings/:id', (req, res) => {
 app.get('/api/bookings/:id/receipt', (req, res) => {
   try {
     const bookings = readBookings();
-    const booking  = bookings.find(b => b.id === req.params.id);
+    const booking = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
     const pdfFileName = `DriveGlow-Receipt-${booking.id}.pdf`;
@@ -552,7 +548,7 @@ app.get('/api/bookings/:id/receipt', (req, res) => {
 app.post('/api/bookings/:id/resend-email', async (req, res) => {
   try {
     const bookings = readBookings();
-    const booking  = bookings.find(b => b.id === req.params.id);
+    const booking = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
     const pdfFileName = `DriveGlow-Receipt-${booking.id}.pdf`;
@@ -564,7 +560,7 @@ app.post('/api/bookings/:id/resend-email', async (req, res) => {
         generateReceiptPDF(booking, pdfStream);
         await new Promise((resolve, reject) => {
           pdfStream.on('finish', resolve);
-          pdfStream.on('error',  reject);
+          pdfStream.on('error', reject);
         });
       } catch (pdfErr) {
         console.error('[RESEND/PDF] PDF generation failed (non-fatal):', pdfErr.message);
@@ -583,16 +579,16 @@ app.post('/api/bookings/:id/resend-email', async (req, res) => {
 app.put('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
-    const index    = bookings.findIndex(b => b.id === req.params.id);
+    const index = bookings.findIndex(b => b.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Booking not found.' });
 
     const merged = {
       ...bookings[index],
       ...req.body,
-      price:     req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
+      price: req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
       updatedAt: new Date().toISOString(),
     };
-    merged.address  = buildAddress(merged);
+    merged.address = buildAddress(merged);
     bookings[index] = merged;
     writeBookings(bookings);
     return res.json({ message: 'Booking updated successfully.', booking: merged });
@@ -612,10 +608,10 @@ app.post('/api/bookings/:id/status', (req, res) => {
     }
 
     const bookings = readBookings();
-    const index    = bookings.findIndex(b => b.id === req.params.id);
+    const index = bookings.findIndex(b => b.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Booking not found.' });
 
-    bookings[index].status    = status;
+    bookings[index].status = status;
     bookings[index].updatedAt = new Date().toISOString();
     writeBookings(bookings);
     return res.json({ message: 'Status updated.', booking: bookings[index] });
@@ -649,7 +645,7 @@ app.use('/api/*', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 function getLocalIPAddresses() {
   const ifaces = os.networkInterfaces();
-  const list   = [];
+  const list = [];
   for (const name in ifaces) {
     for (const net of ifaces[name]) {
       if (net.family === 'IPv4' && !net.internal) list.push({ name, address: net.address });
@@ -663,7 +659,7 @@ function getLocalIPAddresses() {
 // ─────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const ipList       = getLocalIPAddresses();
+  const ipList = getLocalIPAddresses();
 
   console.log('\n==================================================');
   console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
@@ -680,15 +676,15 @@ app.listen(PORT, '0.0.0.0', () => {
       const n = ip.name.toLowerCase();
       const label =
         (n.includes('wi-fi') || n.includes('wlan') || n.includes('wireless')) ? '✅ Wi-Fi' :
-        (n.includes('vmnet') || n.includes('vethernet'))                       ? '⛔ Virtual (skip)' :
-        'LAN';
+          (n.includes('vmnet') || n.includes('vethernet')) ? '⛔ Virtual (skip)' :
+            'LAN';
       console.log(`  • http://${ip.address}:${PORT}  [${ip.name} — ${label}]`);
     });
   }
 
   console.log('--------------------------------------------------');
-  console.log(`  EMAIL_USER  : ${EMAIL_USER  || '⚠️  NOT SET'}`);
-  console.log(`  EMAIL_PASS  : ${EMAIL_PASS  ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  EMAIL_USER  : ${EMAIL_USER || '⚠️  NOT SET'}`);
+  console.log(`  EMAIL_PASS  : ${EMAIL_PASS ? '✅ SET' : '⚠️  NOT SET'}`);
   console.log(`  OWNER_EMAIL : ${OWNER_EMAIL || '⚠️  NOT SET'}`);
   console.log('==================================================\n');
 });
