@@ -18,6 +18,7 @@ const cors       = require('cors');
 const fs         = require('fs');
 const path       = require('path');
 const os         = require('os');
+const dns        = require('dns');        // needed for IPv4-only SMTP on Railway
 const nodemailer = require('nodemailer');
 
 const { generateReceiptPDF } = require('./receipt');
@@ -89,6 +90,13 @@ const transporter = (EMAIL_USER && EMAIL_PASS)
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
+      },
+      // Railway's network does not support outbound IPv6.
+      // Gmail SMTP resolves to IPv6 by default → ENETUNREACH.
+      // Force IPv4 with both settings for maximum compatibility.
+      family: 4,
+      lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { family: 4 }, callback);
       },
     })
   : null;
