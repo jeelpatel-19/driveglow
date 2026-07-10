@@ -15,16 +15,16 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const express = require('express');
-const cors    = require('cors');
-const fs      = require('fs');
-const path    = require('path');
-const os      = require('os');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const emailjs = require('@emailjs/nodejs');
 
 const { generateReceiptPDF } = require('./receipt');
 
 // ─── App & Port ───────────────────────────────────────────────
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Global crash guards ──────────────────────────────────────
@@ -45,7 +45,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── File Paths ───────────────────────────────────────────────
-const DB_FILE      = path.join(__dirname, 'bookings.json');
+const DB_FILE = path.join(__dirname, 'bookings.json');
 const RECEIPTS_DIR = path.join(__dirname, 'logs', 'receipts');
 
 if (!fs.existsSync(DB_FILE)) {
@@ -59,21 +59,21 @@ if (!fs.existsSync(RECEIPTS_DIR)) {
 //  EMAILJS CONFIGURATION
 // ─────────────────────────────────────────────────────────────
 
-const EMAILJS_SERVICE_ID       = (process.env.EMAILJS_SERVICE_ID       || '').trim();
-const EMAILJS_TEMPLATE_ID      = (process.env.EMAILJS_TEMPLATE_ID      || '').trim();
+const EMAILJS_SERVICE_ID = (process.env.EMAILJS_SERVICE_ID || '').trim();
+const EMAILJS_TEMPLATE_ID = (process.env.EMAILJS_TEMPLATE_ID || '').trim();
 // Owner template is optional — falls back to the main template if not set
 const EMAILJS_OWNER_TEMPLATE_ID = (process.env.EMAILJS_OWNER_TEMPLATE_ID || EMAILJS_TEMPLATE_ID).trim();
-const EMAILJS_PUBLIC_KEY       = (process.env.EMAILJS_PUBLIC_KEY       || '').trim();
-const EMAILJS_PRIVATE_KEY      = (process.env.EMAILJS_PRIVATE_KEY      || '').trim();
-const OWNER_EMAIL              = (process.env.OWNER_EMAIL              || '').trim();
+const EMAILJS_PUBLIC_KEY = (process.env.EMAILJS_PUBLIC_KEY || '').trim();
+const EMAILJS_PRIVATE_KEY = (process.env.EMAILJS_PRIVATE_KEY || '').trim();
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').trim();
 
 // ── Startup diagnostic (safe — never prints actual key values) ──
 console.log('\n[ENV DIAGNOSTIC]');
 console.log(`  NODE_ENV                 : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
-console.log(`  EMAILJS_SERVICE_ID       : ${EMAILJS_SERVICE_ID  || '❌ MISSING'}`);
+console.log(`  EMAILJS_SERVICE_ID       : ${EMAILJS_SERVICE_ID || '❌ MISSING'}`);
 console.log(`  EMAILJS_TEMPLATE_ID      : ${EMAILJS_TEMPLATE_ID || '❌ MISSING'}`);
 console.log(`  EMAILJS_OWNER_TEMPLATE_ID: ${EMAILJS_OWNER_TEMPLATE_ID || '(same as EMAILJS_TEMPLATE_ID)'}`);
-console.log(`  EMAILJS_PUBLIC_KEY       : ${EMAILJS_PUBLIC_KEY  ? `✅ PRESENT (${EMAILJS_PUBLIC_KEY.length} chars)`  : '❌ MISSING'}`);
+console.log(`  EMAILJS_PUBLIC_KEY       : ${EMAILJS_PUBLIC_KEY ? `✅ PRESENT (${EMAILJS_PUBLIC_KEY.length} chars)` : '❌ MISSING'}`);
 console.log(`  EMAILJS_PRIVATE_KEY      : ${EMAILJS_PRIVATE_KEY ? `✅ PRESENT (${EMAILJS_PRIVATE_KEY.length} chars)` : '❌ MISSING'}`);
 console.log(`  OWNER_EMAIL              : ${OWNER_EMAIL || '❌ MISSING'}`);
 
@@ -136,7 +136,7 @@ function formatTime12Hour(timeStr) {
   if (!timeStr) return 'N/A';
   const parts = timeStr.split(':');
   if (parts.length < 2) return timeStr;
-  let hours  = parseInt(parts[0], 10);
+  let hours = parseInt(parts[0], 10);
   const mins = parts[1];
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
@@ -146,12 +146,12 @@ function formatTime12Hour(timeStr) {
 function buildAddress(b) {
   return [
     b.flatNumber ? `Flat/Apt ${b.flatNumber}` : '',
-    b.houseName  || '',
-    b.street     || '',
-    b.landmark   ? `Near ${b.landmark}` : '',
-    b.city       || '',
-    b.state      || '',
-    b.pincode    || ''
+    b.houseName || '',
+    b.street || '',
+    b.landmark ? `Near ${b.landmark}` : '',
+    b.city || '',
+    b.state || '',
+    b.pincode || ''
   ].filter(p => typeof p === 'string' && p.trim() !== '').join(', ');
 }
 
@@ -178,15 +178,15 @@ async function sendConfirmationEmail(booking) {
   }
 
   const templateParams = {
-    to_name:          booking.customerName,
-    to_email:         booking.email,
-    booking_id:       booking.id,
-    package_name:     booking.packageName,
-    vehicle:          `${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' · ' + booking.vehicleRegistration : ''}`,
+    to_name: booking.customerName,
+    to_email: booking.email,
+    booking_id: booking.id,
+    package_name: booking.packageName,
+    vehicle: `${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' · ' + booking.vehicleRegistration : ''}`,
     appointment_date: formatDateNice(booking.appointmentDate),
     appointment_time: formatTime12Hour(booking.appointmentTime),
-    address:          booking.address || buildAddress(booking),
-    total_amount:     `₹${Number(booking.price).toLocaleString('en-IN')}`,
+    address: booking.address || buildAddress(booking),
+    total_amount: `₹${Number(booking.price).toLocaleString('en-IN')}`,
   };
 
   console.log(`[EMAIL] Sending customer confirmation → ${booking.email}`);
@@ -223,18 +223,18 @@ async function sendOwnerNotificationEmail(booking) {
   }
 
   const templateParams = {
-    to_email:         OWNER_EMAIL,
-    booking_id:       booking.id,
-    customer_name:    booking.customerName,
-    customer_email:   booking.email,
-    customer_phone:   booking.phone,
-    package_name:     booking.packageName,
-    vehicle:          `${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' (' + booking.vehicleRegistration + ')' : ''}`,
+    to_email: OWNER_EMAIL,
+    booking_id: booking.id,
+    customer_name: booking.customerName,
+    customer_email: booking.email,
+    customer_phone: booking.phone,
+    package_name: booking.packageName,
+    vehicle: `${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' (' + booking.vehicleRegistration + ')' : ''}`,
     appointment_date: formatDateNice(booking.appointmentDate),
     appointment_time: formatTime12Hour(booking.appointmentTime),
-    address:          booking.address || buildAddress(booking),
-    total_amount:     `₹${Number(booking.price).toLocaleString('en-IN')}`,
-    booked_at:        new Date(booking.createdAt).toLocaleString('en-IN'),
+    address: booking.address || buildAddress(booking),
+    total_amount: `₹${Number(booking.price).toLocaleString('en-IN')}`,
+    booked_at: new Date(booking.createdAt).toLocaleString('en-IN'),
   };
 
   console.log(`[EMAIL] Sending owner notification → ${OWNER_EMAIL}`);
@@ -264,15 +264,15 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Validate required fields ──────────────────────────────
     const missing = [];
-    if (!customerName)    missing.push('Customer Name');
-    if (!phone)           missing.push('Phone Number');
-    if (!email)           missing.push('Email Address');
-    if (!packageName)     missing.push('Package');
-    if (!price)           missing.push('Price');
+    if (!customerName) missing.push('Customer Name');
+    if (!phone) missing.push('Phone Number');
+    if (!email) missing.push('Email Address');
+    if (!packageName) missing.push('Package');
+    if (!price) missing.push('Price');
     if (!appointmentDate) missing.push('Appointment Date');
     if (!appointmentTime) missing.push('Appointment Time');
-    if (!vehicleBrand)    missing.push('Vehicle Brand');
-    if (!vehicleModel)    missing.push('Vehicle Model');
+    if (!vehicleBrand) missing.push('Vehicle Brand');
+    if (!vehicleModel) missing.push('Vehicle Model');
 
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}.` });
@@ -284,28 +284,28 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Build booking object ──────────────────────────────────
     const newBooking = {
-      id:                  generateBookingID(),
-      customerName:        customerName.trim(),
-      phone:               phone.trim(),
-      email:               email.trim().toLowerCase(),
-      houseName:           (houseName           || '').trim(),
-      flatNumber:          (flatNumber          || '').trim(),
-      street:              (street              || '').trim(),
-      landmark:            (landmark            || '').trim(),
-      city:                (city                || '').trim(),
-      state:               (state               || '').trim(),
-      pincode:             (pincode             || '').trim(),
-      address:             '',
-      vehicleBrand:        (vehicleBrand        || '').trim(),
-      vehicleModel:        (vehicleModel        || '').trim(),
-      vehicleType:         (vehicleType         || '').trim(),
+      id: generateBookingID(),
+      customerName: customerName.trim(),
+      phone: phone.trim(),
+      email: email.trim().toLowerCase(),
+      houseName: (houseName || '').trim(),
+      flatNumber: (flatNumber || '').trim(),
+      street: (street || '').trim(),
+      landmark: (landmark || '').trim(),
+      city: (city || '').trim(),
+      state: (state || '').trim(),
+      pincode: (pincode || '').trim(),
+      address: '',
+      vehicleBrand: (vehicleBrand || '').trim(),
+      vehicleModel: (vehicleModel || '').trim(),
+      vehicleType: (vehicleType || '').trim(),
       vehicleRegistration: (vehicleRegistration || '').trim().toUpperCase(),
-      packageName:         packageName.trim(),
-      price:               parseFloat(price),
+      packageName: packageName.trim(),
+      price: parseFloat(price),
       appointmentDate,
       appointmentTime,
-      status:              'Confirmed',
-      createdAt:           new Date().toISOString(),
+      status: 'Confirmed',
+      createdAt: new Date().toISOString(),
     };
 
     newBooking.address = buildAddress(newBooking);
@@ -325,7 +325,7 @@ app.post('/api/bookings', async (req, res) => {
       generateReceiptPDF(newBooking, pdfStream);
       await new Promise((resolve, reject) => {
         pdfStream.on('finish', resolve);
-        pdfStream.on('error',  reject);
+        pdfStream.on('error', reject);
       });
       console.log(`[PDF] ✅ Receipt generated: ${pdfFileName}`);
     } catch (pdfErr) {
@@ -333,7 +333,7 @@ app.post('/api/bookings', async (req, res) => {
     }
 
     // ── Send customer confirmation email (non-fatal) ──────────
-    let emailSent  = false;
+    let emailSent = false;
     let emailError = null;
 
     try {
@@ -364,8 +364,8 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Always return 201 — booking always succeeds ───────────
     return res.status(201).json({
-      message:      'Booking completed successfully.',
-      booking:      newBooking,
+      message: 'Booking completed successfully.',
+      booking: newBooking,
       emailSent,
       emailError,
       ownerNotified,
@@ -393,7 +393,7 @@ app.get('/api/bookings', (req, res) => {
 app.get('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
-    const booking  = bookings.find(b => b.id === req.params.id);
+    const booking = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     return res.json(booking);
   } catch (err) {
@@ -405,7 +405,7 @@ app.get('/api/bookings/:id', (req, res) => {
 app.get('/api/bookings/:id/receipt', (req, res) => {
   try {
     const bookings = readBookings();
-    const booking  = bookings.find(b => b.id === req.params.id);
+    const booking = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
     const pdfFileName = `DriveGlow-Receipt-${booking.id}.pdf`;
@@ -429,7 +429,7 @@ app.get('/api/bookings/:id/receipt', (req, res) => {
 app.post('/api/bookings/:id/resend-email', async (req, res) => {
   try {
     const bookings = readBookings();
-    const booking  = bookings.find(b => b.id === req.params.id);
+    const booking = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
     await sendConfirmationEmail(booking);
@@ -448,16 +448,16 @@ app.post('/api/bookings/:id/resend-email', async (req, res) => {
 app.put('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
-    const index    = bookings.findIndex(b => b.id === req.params.id);
+    const index = bookings.findIndex(b => b.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Booking not found.' });
 
     const merged = {
       ...bookings[index],
       ...req.body,
-      price:     req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
+      price: req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
       updatedAt: new Date().toISOString(),
     };
-    merged.address  = buildAddress(merged);
+    merged.address = buildAddress(merged);
     bookings[index] = merged;
     writeBookings(bookings);
     return res.json({ message: 'Booking updated successfully.', booking: merged });
@@ -477,10 +477,10 @@ app.post('/api/bookings/:id/status', (req, res) => {
     }
 
     const bookings = readBookings();
-    const index    = bookings.findIndex(b => b.id === req.params.id);
+    const index = bookings.findIndex(b => b.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Booking not found.' });
 
-    bookings[index].status    = status;
+    bookings[index].status = status;
     bookings[index].updatedAt = new Date().toISOString();
     writeBookings(bookings);
     return res.json({ message: 'Status updated.', booking: bookings[index] });
@@ -514,7 +514,7 @@ app.use('/api/*', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 function getLocalIPAddresses() {
   const ifaces = os.networkInterfaces();
-  const list   = [];
+  const list = [];
   for (const name in ifaces) {
     for (const net of ifaces[name]) {
       if (net.family === 'IPv4' && !net.internal) list.push({ name, address: net.address });
@@ -528,7 +528,7 @@ function getLocalIPAddresses() {
 // ─────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const ipList       = getLocalIPAddresses();
+  const ipList = getLocalIPAddresses();
 
   console.log('\n==================================================');
   console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
@@ -545,17 +545,17 @@ app.listen(PORT, '0.0.0.0', () => {
       const n = ip.name.toLowerCase();
       const label =
         (n.includes('wi-fi') || n.includes('wlan') || n.includes('wireless')) ? '✅ Wi-Fi' :
-        (n.includes('vmnet') || n.includes('vethernet'))                       ? '⛔ Virtual (skip)' :
-        'LAN';
+          (n.includes('vmnet') || n.includes('vethernet')) ? '⛔ Virtual (skip)' :
+            'LAN';
       console.log(`  • http://${ip.address}:${PORT}  [${ip.name} — ${label}]`);
     });
   }
 
   console.log('--------------------------------------------------');
-  console.log(`  EMAILJS_SERVICE_ID  : ${EMAILJS_SERVICE_ID  || '⚠️  NOT SET'}`);
+  console.log(`  EMAILJS_SERVICE_ID  : ${EMAILJS_SERVICE_ID || '⚠️  NOT SET'}`);
   console.log(`  EMAILJS_TEMPLATE_ID : ${EMAILJS_TEMPLATE_ID || '⚠️  NOT SET'}`);
-  console.log(`  EMAILJS_PUBLIC_KEY  : ${EMAILJS_PUBLIC_KEY  ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  EMAILJS_PUBLIC_KEY  : ${EMAILJS_PUBLIC_KEY ? '✅ SET' : '⚠️  NOT SET'}`);
   console.log(`  EMAILJS_PRIVATE_KEY : ${EMAILJS_PRIVATE_KEY ? '✅ SET' : '⚠️  NOT SET'}`);
-  console.log(`  OWNER_EMAIL         : ${OWNER_EMAIL         || '⚠️  NOT SET'}`);
+  console.log(`  OWNER_EMAIL         : ${OWNER_EMAIL || '⚠️  NOT SET'}`);
   console.log('==================================================\n');
 });
