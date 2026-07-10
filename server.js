@@ -1,30 +1,30 @@
 // ─────────────────────────────────────────────────────────────
 //  DriveGlow — Production-Ready Server
-//  Email: Nodemailer + Gmail SMTP
+//  Email: EmailJS HTTP API (@emailjs/nodejs)
 //  Works on: Railway, Render, Fly.io, localhost
+//  SMTP ports are NOT used — pure HTTPS, never blocked.
 // ─────────────────────────────────────────────────────────────
 
 // Load .env ONLY in local development.
 // On Railway/Render/Fly.io env vars are injected by the platform.
-// dotenv v17 (dotenvx) overrides process.env by default — so we must
-// NEVER call dotenv.config() in production or it overwrites real values.
+// dotenv v17 (dotenvx) overrides process.env by default — never call
+// dotenv.config() in production or it overwrites platform values.
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config({ override: false });
   console.log('[ENV] Loaded .env file (development mode)');
 }
 
 const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const dns = require('dns');        // needed for IPv4-only SMTP on Railway
-const nodemailer = require('nodemailer');
+const cors    = require('cors');
+const fs      = require('fs');
+const path    = require('path');
+const os      = require('os');
+const emailjs = require('@emailjs/nodejs');
 
 const { generateReceiptPDF } = require('./receipt');
 
 // ─── App & Port ───────────────────────────────────────────────
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Global crash guards ──────────────────────────────────────
@@ -45,7 +45,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── File Paths ───────────────────────────────────────────────
-const DB_FILE = path.join(__dirname, 'bookings.json');
+const DB_FILE      = path.join(__dirname, 'bookings.json');
 const RECEIPTS_DIR = path.join(__dirname, 'logs', 'receipts');
 
 if (!fs.existsSync(DB_FILE)) {
@@ -56,46 +56,37 @@ if (!fs.existsSync(RECEIPTS_DIR)) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL CONFIGURATION — Gmail SMTP via Nodemailer
+//  EMAILJS CONFIGURATION
 // ─────────────────────────────────────────────────────────────
 
-// Read env vars once at startup.
-// Gmail App Passwords are shown with spaces — strip them before use.
-const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
-const EMAIL_PASS = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
-const OWNER_EMAIL = (process.env.OWNER_EMAIL || EMAIL_USER).trim();
+const EMAILJS_SERVICE_ID       = (process.env.EMAILJS_SERVICE_ID       || '').trim();
+const EMAILJS_TEMPLATE_ID      = (process.env.EMAILJS_TEMPLATE_ID      || '').trim();
+// Owner template is optional — falls back to the main template if not set
+const EMAILJS_OWNER_TEMPLATE_ID = (process.env.EMAILJS_OWNER_TEMPLATE_ID || EMAILJS_TEMPLATE_ID).trim();
+const EMAILJS_PUBLIC_KEY       = (process.env.EMAILJS_PUBLIC_KEY       || '').trim();
+const EMAILJS_PRIVATE_KEY      = (process.env.EMAILJS_PRIVATE_KEY      || '').trim();
+const OWNER_EMAIL              = (process.env.OWNER_EMAIL              || '').trim();
 
-// ── Startup diagnostic (safe — never prints actual password) ──
+// ── Startup diagnostic (safe — never prints actual key values) ──
 console.log('\n[ENV DIAGNOSTIC]');
-console.log(`  NODE_ENV    : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
-console.log(`  EMAIL_USER  : ${EMAIL_USER || '❌ MISSING'}`);
-console.log(`  EMAIL_PASS  : ${EMAIL_PASS ? `✅ PRESENT (${EMAIL_PASS.length} chars)` : '❌ MISSING'}`);
-console.log(`  OWNER_EMAIL : ${OWNER_EMAIL || '❌ MISSING (will fall back to EMAIL_USER)'}`);
+console.log(`  NODE_ENV                 : ${process.env.NODE_ENV || 'not set (treating as development)'}`);
+console.log(`  EMAILJS_SERVICE_ID       : ${EMAILJS_SERVICE_ID  || '❌ MISSING'}`);
+console.log(`  EMAILJS_TEMPLATE_ID      : ${EMAILJS_TEMPLATE_ID || '❌ MISSING'}`);
+console.log(`  EMAILJS_OWNER_TEMPLATE_ID: ${EMAILJS_OWNER_TEMPLATE_ID || '(same as EMAILJS_TEMPLATE_ID)'}`);
+console.log(`  EMAILJS_PUBLIC_KEY       : ${EMAILJS_PUBLIC_KEY  ? `✅ PRESENT (${EMAILJS_PUBLIC_KEY.length} chars)`  : '❌ MISSING'}`);
+console.log(`  EMAILJS_PRIVATE_KEY      : ${EMAILJS_PRIVATE_KEY ? `✅ PRESENT (${EMAILJS_PRIVATE_KEY.length} chars)` : '❌ MISSING'}`);
+console.log(`  OWNER_EMAIL              : ${OWNER_EMAIL || '❌ MISSING'}`);
 
-if (!EMAIL_USER || !EMAIL_PASS) {
-  console.error('[ENV] ❌ EMAIL_USER or EMAIL_PASS is missing — emails will not be sent.');
+const _emailjsReady = EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY && EMAILJS_PRIVATE_KEY && OWNER_EMAIL;
+if (!_emailjsReady) {
+  console.error('[ENV] ❌ One or more required EmailJS variables are missing — emails will not be sent.');
   console.error('[ENV]    Railway: Dashboard → your service → Variables tab');
-  console.error('[ENV]    EMAIL_USER = your Gmail address');
-  console.error('[ENV]    EMAIL_PASS = 16-char Gmail App Password (no spaces)');
-  console.error('[ENV]    Generate one at: myaccount.google.com/apppasswords');
+  console.error('[ENV]    Required: EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY, OWNER_EMAIL');
 }
 console.log('');
 
-// ── Create Nodemailer transporter (once, reused for all sends) ──
-// Uses Gmail's built-in service preset — no host/port/TLS config needed.
-// Works on all cloud platforms including Railway.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  family: 4,
-  connectionTimeout: 10000,
-  socketTimeout: 10000
-});
+// EmailJS credentials object — reused for every send call
+const EMAILJS_CREDENTIALS = { publicKey: EMAILJS_PUBLIC_KEY, privateKey: EMAILJS_PRIVATE_KEY };
 
 // ─────────────────────────────────────────────────────────────
 //  DATABASE HELPERS
@@ -145,7 +136,7 @@ function formatTime12Hour(timeStr) {
   if (!timeStr) return 'N/A';
   const parts = timeStr.split(':');
   if (parts.length < 2) return timeStr;
-  let hours = parseInt(parts[0], 10);
+  let hours  = parseInt(parts[0], 10);
   const mins = parts[1];
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
@@ -155,220 +146,106 @@ function formatTime12Hour(timeStr) {
 function buildAddress(b) {
   return [
     b.flatNumber ? `Flat/Apt ${b.flatNumber}` : '',
-    b.houseName || '',
-    b.street || '',
-    b.landmark ? `Near ${b.landmark}` : '',
-    b.city || '',
-    b.state || '',
-    b.pincode || ''
+    b.houseName  || '',
+    b.street     || '',
+    b.landmark   ? `Near ${b.landmark}` : '',
+    b.city       || '',
+    b.state      || '',
+    b.pincode    || ''
   ].filter(p => typeof p === 'string' && p.trim() !== '').join(', ');
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL: CUSTOMER CONFIRMATION  (Gmail SMTP via Nodemailer)
+//  EMAIL: CUSTOMER CONFIRMATION  (via EmailJS HTTP API)
+//
+//  Template variables available in your EmailJS template:
+//    {{to_name}}          — customer's full name
+//    {{to_email}}         — customer's email (EmailJS "To Email" field)
+//    {{booking_id}}       — e.g. DG-48291
+//    {{package_name}}     — e.g. Full Detail
+//    {{vehicle}}          — e.g. Maruti Swift · MH01AB1234
+//    {{appointment_date}} — e.g. 10 July 2026
+//    {{appointment_time}} — e.g. 11:00 AM
+//    {{address}}          — full service address
+//    {{total_amount}}     — e.g. ₹2,499
 // ─────────────────────────────────────────────────────────────
-async function sendConfirmationEmail(booking, pdfFilePath) {
-  if (!transporter) {
-    throw new Error('Gmail transporter not initialised — EMAIL_USER or EMAIL_PASS is missing.');
+async function sendConfirmationEmail(booking) {
+  if (!_emailjsReady) {
+    throw new Error('EmailJS not configured — one or more required env vars are missing.');
   }
   if (!booking.email) {
     throw new Error('Customer email address is missing from booking.');
   }
 
-  const formattedDate = formatDateNice(booking.appointmentDate);
-  const formattedTime = formatTime12Hour(booking.appointmentTime);
-  const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
-  const address = booking.address || buildAddress(booking);
-
-  const text = [
-    `Hello ${booking.customerName},`,
-    '',
-    'Your DriveGlow booking has been confirmed successfully.',
-    '',
-    `Booking ID   : ${booking.id}`,
-    `Package      : ${booking.packageName}`,
-    `Vehicle      : ${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' · ' + booking.vehicleRegistration : ''}`,
-    `Date         : ${formattedDate}`,
-    `Time         : ${formattedTime}`,
-    `Address      : ${address}`,
-    `Total Amount : ${priceFormatted}`,
-    '',
-    'Our professional detailing team will arrive at your selected time.',
-    'Thank you for choosing DriveGlow.',
-    '',
-    'Regards,',
-    'DriveGlow Premium Car Detailing',
-  ].join('\n');
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <style>
-    body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#0F0F0F;color:#E5E5E5;margin:0;padding:40px 0}
-    .wrap{max-width:600px;margin:0 auto;background:#141414;border:1px solid rgba(198,161,91,.25);border-radius:12px;overflow:hidden}
-    .hdr{background:#0A0A0A;padding:28px 40px;border-bottom:2px solid #4D1022;text-align:center}
-    .logo{font-size:22px;font-weight:bold;letter-spacing:3px;color:#fff;font-family:Georgia,serif}
-    .logo span{color:#C6A15B}
-    .sub{font-size:10px;color:#5a5a5a;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
-    .body{padding:36px 40px;line-height:1.65;font-size:14px}
-    h1{color:#fff;font-size:20px;font-weight:normal;font-family:Georgia,serif;margin:0 0 16px}
-    p{color:#A8A8A8;margin:0 0 18px}
-    .box{background:#1C1C1C;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:24px;margin-bottom:28px}
-    h2{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C6A15B;border-bottom:1px solid rgba(198,161,91,.2);padding-bottom:8px;margin:0 0 14px}
-    table{width:100%;border-collapse:collapse}
-    td{padding:7px 0;font-size:13px;vertical-align:top}
-    .lbl{color:#5a5a5a;font-weight:bold;width:45%}
-    .val{color:#E5E5E5;text-align:right}
-    .tot{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed rgba(198,161,91,.25);padding-top:12px;margin-top:12px}
-    .tot-lbl{font-size:13px;color:#A8A8A8;font-weight:bold}
-    .tot-val{font-size:22px;color:#C6A15B;font-family:Georgia,serif;font-weight:bold}
-    .ftr{background:#0A0A0A;padding:22px 40px;text-align:center;font-size:11px;color:#5a5a5a;border-top:1px solid rgba(255,255,255,.05)}
-  </style>
-</head>
-<body>
-<div class="wrap">
-  <div class="hdr">
-    <div class="logo">DRIVE<span>GLOW</span></div>
-    <div class="sub">Premium Automotive Detailing</div>
-  </div>
-  <div class="body">
-    <h1>Hello ${booking.customerName},</h1>
-    <p>Thank you for choosing <strong>DriveGlow</strong>. Your booking has been confirmed successfully.</p>
-    <div class="box">
-      <h2>Booking Details</h2>
-      <table>
-        <tr><td class="lbl">Booking ID</td><td class="val"><strong>${booking.id}</strong></td></tr>
-        <tr><td class="lbl">Package</td><td class="val">${booking.packageName}</td></tr>
-        <tr><td class="lbl">Vehicle</td><td class="val">${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' · ' + booking.vehicleRegistration : ''}</td></tr>
-        <tr><td class="lbl">Date</td><td class="val">${formattedDate}</td></tr>
-        <tr><td class="lbl">Time</td><td class="val">${formattedTime}</td></tr>
-        <tr><td class="lbl">Service Address</td><td class="val">${address}</td></tr>
-        <tr><td class="lbl">Status</td><td class="val">Confirmed ✓</td></tr>
-      </table>
-      <div class="tot">
-        <span class="tot-lbl">Total Amount</span>
-        <span class="tot-val">${priceFormatted}</span>
-      </div>
-    </div>
-    <p>Our professional detailing team will arrive at your selected time.</p>
-    <p>Thank you for trusting DriveGlow. We look forward to giving your vehicle a premium showroom-quality finish.</p>
-    <p><strong>Regards,</strong><br>DriveGlow Premium Car Detailing</p>
-  </div>
-  <div class="ftr">support@driveglow.in &nbsp;·&nbsp; +91 98765 43210</div>
-</div>
-</body>
-</html>`;
-
-  // Build attachments array — attach PDF if it exists on disk
-  const attachments = [];
-  if (pdfFilePath && fs.existsSync(pdfFilePath)) {
-    attachments.push({
-      filename: `DriveGlow-Receipt-${booking.id}.pdf`,
-      path: pdfFilePath,
-    });
-  }
+  const templateParams = {
+    to_name:          booking.customerName,
+    to_email:         booking.email,
+    booking_id:       booking.id,
+    package_name:     booking.packageName,
+    vehicle:          `${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' · ' + booking.vehicleRegistration : ''}`,
+    appointment_date: formatDateNice(booking.appointmentDate),
+    appointment_time: formatTime12Hour(booking.appointmentTime),
+    address:          booking.address || buildAddress(booking),
+    total_amount:     `₹${Number(booking.price).toLocaleString('en-IN')}`,
+  };
 
   console.log(`[EMAIL] Sending customer confirmation → ${booking.email}`);
-  const info = await transporter.sendMail({
-    from: `"DriveGlow Detailing" <${EMAIL_USER}>`,
-    to: booking.email,
-    subject: `DriveGlow – Booking Confirmed · ${booking.id}`,
-    text,
-    html,
-    attachments,
-  });
-  console.log(`[EMAIL] ✅ Customer confirmation sent (messageId: ${info.messageId})`);
-  return info;
+  const response = await emailjs.send(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_TEMPLATE_ID,
+    templateParams,
+    EMAILJS_CREDENTIALS
+  );
+  console.log(`[EMAIL] ✅ Customer confirmation sent (status: ${response.status} ${response.text})`);
+  return response;
 }
 
 // ─────────────────────────────────────────────────────────────
-//  EMAIL: OWNER NOTIFICATION  (Gmail SMTP via Nodemailer)
+//  EMAIL: OWNER NOTIFICATION  (via EmailJS HTTP API)
+//
+//  Template variables available in your EmailJS owner template:
+//    {{to_email}}         — owner's email (OWNER_EMAIL env var)
+//    {{booking_id}}       — e.g. DG-48291
+//    {{customer_name}}    — customer full name
+//    {{customer_email}}   — customer email address
+//    {{customer_phone}}   — customer phone
+//    {{package_name}}     — e.g. Full Detail
+//    {{vehicle}}          — brand, model, reg
+//    {{appointment_date}} — formatted date
+//    {{appointment_time}} — formatted time
+//    {{address}}          — full service address
+//    {{total_amount}}     — e.g. ₹2,499
+//    {{booked_at}}        — booking creation timestamp
 // ─────────────────────────────────────────────────────────────
 async function sendOwnerNotificationEmail(booking) {
-  if (!transporter) {
-    throw new Error('Gmail transporter not initialised — EMAIL_USER or EMAIL_PASS is missing.');
+  if (!_emailjsReady) {
+    throw new Error('EmailJS not configured — one or more required env vars are missing.');
   }
 
-  const formattedDate = formatDateNice(booking.appointmentDate);
-  const formattedTime = formatTime12Hour(booking.appointmentTime);
-  const priceFormatted = `₹${Number(booking.price).toLocaleString('en-IN')}`;
-  const address = booking.address || buildAddress(booking);
-
-  const text = [
-    'New Booking Received — DriveGlow',
-    '',
-    `Booking ID    : ${booking.id}`,
-    `Customer Name : ${booking.customerName}`,
-    `Email         : ${booking.email}`,
-    `Phone         : ${booking.phone}`,
-    `Address       : ${address}`,
-    `Vehicle       : ${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' (' + booking.vehicleRegistration + ')' : ''}`,
-    `Package       : ${booking.packageName}`,
-    `Date          : ${formattedDate}`,
-    `Time          : ${formattedTime}`,
-    `Amount        : ${priceFormatted}`,
-    `Booked At     : ${new Date(booking.createdAt).toLocaleString('en-IN')}`,
-  ].join('\n');
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <style>
-    body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;margin:0;padding:30px 0}
-    .wrap{max-width:580px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #ddd}
-    .hdr{background:#4D1022;color:#fff;padding:20px 30px}
-    .hdr h2{margin:0;font-size:18px}
-    .hdr p{margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.7)}
-    .body{padding:24px 30px}
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    tr:nth-child(even) td{background:#f9f9f9}
-    td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top}
-    .lbl{color:#888;font-weight:bold;width:40%}
-    .val{color:#222}
-    .badge{display:inline-block;background:#C6A15B;color:#fff;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:bold}
-    .ftr{background:#fafafa;padding:14px 30px;font-size:12px;color:#aaa;border-top:1px solid #eee;text-align:center}
-  </style>
-</head>
-<body>
-<div class="wrap">
-  <div class="hdr">
-    <h2>🚗 New Booking Received</h2>
-    <p>DriveGlow Admin Notification</p>
-  </div>
-  <div class="body">
-    <table>
-      <tr><td class="lbl">Booking ID</td><td class="val"><strong>${booking.id}</strong></td></tr>
-      <tr><td class="lbl">Customer Name</td><td class="val">${booking.customerName}</td></tr>
-      <tr><td class="lbl">Customer Email</td><td class="val"><a href="mailto:${booking.email}">${booking.email}</a></td></tr>
-      <tr><td class="lbl">Phone</td><td class="val">${booking.phone}</td></tr>
-      <tr><td class="lbl">Service Address</td><td class="val">${address}</td></tr>
-      <tr><td class="lbl">Vehicle</td><td class="val">${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' (' + booking.vehicleRegistration + ')' : ''}</td></tr>
-      <tr><td class="lbl">Package</td><td class="val"><span class="badge">${booking.packageName}</span></td></tr>
-      <tr><td class="lbl">Appointment Date</td><td class="val">${formattedDate}</td></tr>
-      <tr><td class="lbl">Appointment Time</td><td class="val">${formattedTime}</td></tr>
-      <tr><td class="lbl">Total Amount</td><td class="val"><strong>${priceFormatted}</strong></td></tr>
-      <tr><td class="lbl">Booked At</td><td class="val">${new Date(booking.createdAt).toLocaleString('en-IN')}</td></tr>
-    </table>
-  </div>
-  <div class="ftr">DriveGlow Booking System · Automated Notification</div>
-</div>
-</body>
-</html>`;
+  const templateParams = {
+    to_email:         OWNER_EMAIL,
+    booking_id:       booking.id,
+    customer_name:    booking.customerName,
+    customer_email:   booking.email,
+    customer_phone:   booking.phone,
+    package_name:     booking.packageName,
+    vehicle:          `${booking.vehicleBrand} ${booking.vehicleModel}${booking.vehicleRegistration ? ' (' + booking.vehicleRegistration + ')' : ''}`,
+    appointment_date: formatDateNice(booking.appointmentDate),
+    appointment_time: formatTime12Hour(booking.appointmentTime),
+    address:          booking.address || buildAddress(booking),
+    total_amount:     `₹${Number(booking.price).toLocaleString('en-IN')}`,
+    booked_at:        new Date(booking.createdAt).toLocaleString('en-IN'),
+  };
 
   console.log(`[EMAIL] Sending owner notification → ${OWNER_EMAIL}`);
-  const info = await transporter.sendMail({
-    from: `"DriveGlow Booking System" <${EMAIL_USER}>`,
-    to: OWNER_EMAIL,
-    subject: `[DriveGlow] New Booking — ${booking.id} · ${booking.customerName}`,
-    text,
-    html,
-  });
-  console.log(`[EMAIL] ✅ Owner notification sent (messageId: ${info.messageId})`);
-  return info;
+  const response = await emailjs.send(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_OWNER_TEMPLATE_ID,
+    templateParams,
+    EMAILJS_CREDENTIALS
+  );
+  console.log(`[EMAIL] ✅ Owner notification sent (status: ${response.status} ${response.text})`);
+  return response;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -387,15 +264,15 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Validate required fields ──────────────────────────────
     const missing = [];
-    if (!customerName) missing.push('Customer Name');
-    if (!phone) missing.push('Phone Number');
-    if (!email) missing.push('Email Address');
-    if (!packageName) missing.push('Package');
-    if (!price) missing.push('Price');
+    if (!customerName)    missing.push('Customer Name');
+    if (!phone)           missing.push('Phone Number');
+    if (!email)           missing.push('Email Address');
+    if (!packageName)     missing.push('Package');
+    if (!price)           missing.push('Price');
     if (!appointmentDate) missing.push('Appointment Date');
     if (!appointmentTime) missing.push('Appointment Time');
-    if (!vehicleBrand) missing.push('Vehicle Brand');
-    if (!vehicleModel) missing.push('Vehicle Model');
+    if (!vehicleBrand)    missing.push('Vehicle Brand');
+    if (!vehicleModel)    missing.push('Vehicle Model');
 
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}.` });
@@ -407,28 +284,28 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Build booking object ──────────────────────────────────
     const newBooking = {
-      id: generateBookingID(),
-      customerName: customerName.trim(),
-      phone: phone.trim(),
-      email: email.trim().toLowerCase(),
-      houseName: (houseName || '').trim(),
-      flatNumber: (flatNumber || '').trim(),
-      street: (street || '').trim(),
-      landmark: (landmark || '').trim(),
-      city: (city || '').trim(),
-      state: (state || '').trim(),
-      pincode: (pincode || '').trim(),
-      address: '',
-      vehicleBrand: (vehicleBrand || '').trim(),
-      vehicleModel: (vehicleModel || '').trim(),
-      vehicleType: (vehicleType || '').trim(),
+      id:                  generateBookingID(),
+      customerName:        customerName.trim(),
+      phone:               phone.trim(),
+      email:               email.trim().toLowerCase(),
+      houseName:           (houseName           || '').trim(),
+      flatNumber:          (flatNumber          || '').trim(),
+      street:              (street              || '').trim(),
+      landmark:            (landmark            || '').trim(),
+      city:                (city                || '').trim(),
+      state:               (state               || '').trim(),
+      pincode:             (pincode             || '').trim(),
+      address:             '',
+      vehicleBrand:        (vehicleBrand        || '').trim(),
+      vehicleModel:        (vehicleModel        || '').trim(),
+      vehicleType:         (vehicleType         || '').trim(),
       vehicleRegistration: (vehicleRegistration || '').trim().toUpperCase(),
-      packageName: packageName.trim(),
-      price: parseFloat(price),
+      packageName:         packageName.trim(),
+      price:               parseFloat(price),
       appointmentDate,
       appointmentTime,
-      status: 'Confirmed',
-      createdAt: new Date().toISOString(),
+      status:              'Confirmed',
+      createdAt:           new Date().toISOString(),
     };
 
     newBooking.address = buildAddress(newBooking);
@@ -442,27 +319,25 @@ app.post('/api/bookings', async (req, res) => {
     // ── Generate PDF receipt (non-fatal) ──────────────────────
     const pdfFileName = `DriveGlow-Receipt-${newBooking.id}.pdf`;
     const pdfFilePath = path.join(RECEIPTS_DIR, pdfFileName);
-    let pdfReady = false;
 
     try {
       const pdfStream = fs.createWriteStream(pdfFilePath);
       generateReceiptPDF(newBooking, pdfStream);
       await new Promise((resolve, reject) => {
         pdfStream.on('finish', resolve);
-        pdfStream.on('error', reject);
+        pdfStream.on('error',  reject);
       });
-      pdfReady = true;
       console.log(`[PDF] ✅ Receipt generated: ${pdfFileName}`);
     } catch (pdfErr) {
       console.error(`[PDF] ⚠️  Receipt generation failed (non-fatal): ${pdfErr.message}`);
     }
 
     // ── Send customer confirmation email (non-fatal) ──────────
-    let emailSent = false;
+    let emailSent  = false;
     let emailError = null;
 
     try {
-      await sendConfirmationEmail(newBooking, pdfReady ? pdfFilePath : null);
+      await sendConfirmationEmail(newBooking);
       emailSent = true;
     } catch (err) {
       emailError = err.message;
@@ -483,8 +358,8 @@ app.post('/api/bookings', async (req, res) => {
 
     // ── Always return 201 — booking always succeeds ───────────
     return res.status(201).json({
-      message: 'Booking completed successfully.',
-      booking: newBooking,
+      message:      'Booking completed successfully.',
+      booking:      newBooking,
       emailSent,
       emailError,
       ownerNotified,
@@ -512,7 +387,7 @@ app.get('/api/bookings', (req, res) => {
 app.get('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
-    const booking = bookings.find(b => b.id === req.params.id);
+    const booking  = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     return res.json(booking);
   } catch (err) {
@@ -524,7 +399,7 @@ app.get('/api/bookings/:id', (req, res) => {
 app.get('/api/bookings/:id/receipt', (req, res) => {
   try {
     const bookings = readBookings();
-    const booking = bookings.find(b => b.id === req.params.id);
+    const booking  = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
     const pdfFileName = `DriveGlow-Receipt-${booking.id}.pdf`;
@@ -544,30 +419,14 @@ app.get('/api/bookings/:id/receipt', (req, res) => {
   }
 });
 
-// POST /api/bookings/:id/resend-email — Resend confirmation
+// POST /api/bookings/:id/resend-email — Resend confirmation to customer
 app.post('/api/bookings/:id/resend-email', async (req, res) => {
   try {
     const bookings = readBookings();
-    const booking = bookings.find(b => b.id === req.params.id);
+    const booking  = bookings.find(b => b.id === req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
-    const pdfFileName = `DriveGlow-Receipt-${booking.id}.pdf`;
-    const pdfFilePath = path.join(RECEIPTS_DIR, pdfFileName);
-
-    if (!fs.existsSync(pdfFilePath)) {
-      try {
-        const pdfStream = fs.createWriteStream(pdfFilePath);
-        generateReceiptPDF(booking, pdfStream);
-        await new Promise((resolve, reject) => {
-          pdfStream.on('finish', resolve);
-          pdfStream.on('error', reject);
-        });
-      } catch (pdfErr) {
-        console.error('[RESEND/PDF] PDF generation failed (non-fatal):', pdfErr.message);
-      }
-    }
-
-    await sendConfirmationEmail(booking, fs.existsSync(pdfFilePath) ? pdfFilePath : null);
+    await sendConfirmationEmail(booking);
     return res.json({ message: 'Confirmation email resent successfully.', emailSent: true });
   } catch (err) {
     console.error('[RESEND] Error:', err.message);
@@ -579,16 +438,16 @@ app.post('/api/bookings/:id/resend-email', async (req, res) => {
 app.put('/api/bookings/:id', (req, res) => {
   try {
     const bookings = readBookings();
-    const index = bookings.findIndex(b => b.id === req.params.id);
+    const index    = bookings.findIndex(b => b.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Booking not found.' });
 
     const merged = {
       ...bookings[index],
       ...req.body,
-      price: req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
+      price:     req.body.price !== undefined ? parseFloat(req.body.price) : bookings[index].price,
       updatedAt: new Date().toISOString(),
     };
-    merged.address = buildAddress(merged);
+    merged.address  = buildAddress(merged);
     bookings[index] = merged;
     writeBookings(bookings);
     return res.json({ message: 'Booking updated successfully.', booking: merged });
@@ -608,10 +467,10 @@ app.post('/api/bookings/:id/status', (req, res) => {
     }
 
     const bookings = readBookings();
-    const index = bookings.findIndex(b => b.id === req.params.id);
+    const index    = bookings.findIndex(b => b.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: 'Booking not found.' });
 
-    bookings[index].status = status;
+    bookings[index].status    = status;
     bookings[index].updatedAt = new Date().toISOString();
     writeBookings(bookings);
     return res.json({ message: 'Status updated.', booking: bookings[index] });
@@ -645,7 +504,7 @@ app.use('/api/*', (req, res) => {
 // ─────────────────────────────────────────────────────────────
 function getLocalIPAddresses() {
   const ifaces = os.networkInterfaces();
-  const list = [];
+  const list   = [];
   for (const name in ifaces) {
     for (const net of ifaces[name]) {
       if (net.family === 'IPv4' && !net.internal) list.push({ name, address: net.address });
@@ -659,12 +518,12 @@ function getLocalIPAddresses() {
 // ─────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const ipList = getLocalIPAddresses();
+  const ipList       = getLocalIPAddresses();
 
   console.log('\n==================================================');
   console.log('  DRIVEGLOW LUXURY DETAILING SERVER');
   console.log(`  Environment : ${isProduction ? 'PRODUCTION (Railway)' : 'DEVELOPMENT'}`);
-  console.log('  Email       : Gmail SMTP via Nodemailer');
+  console.log('  Email       : EmailJS HTTP API (no SMTP, no port blocks)');
   console.log('==================================================');
 
   if (isProduction) {
@@ -676,15 +535,17 @@ app.listen(PORT, '0.0.0.0', () => {
       const n = ip.name.toLowerCase();
       const label =
         (n.includes('wi-fi') || n.includes('wlan') || n.includes('wireless')) ? '✅ Wi-Fi' :
-          (n.includes('vmnet') || n.includes('vethernet')) ? '⛔ Virtual (skip)' :
-            'LAN';
+        (n.includes('vmnet') || n.includes('vethernet'))                       ? '⛔ Virtual (skip)' :
+        'LAN';
       console.log(`  • http://${ip.address}:${PORT}  [${ip.name} — ${label}]`);
     });
   }
 
   console.log('--------------------------------------------------');
-  console.log(`  EMAIL_USER  : ${EMAIL_USER || '⚠️  NOT SET'}`);
-  console.log(`  EMAIL_PASS  : ${EMAIL_PASS ? '✅ SET' : '⚠️  NOT SET'}`);
-  console.log(`  OWNER_EMAIL : ${OWNER_EMAIL || '⚠️  NOT SET'}`);
+  console.log(`  EMAILJS_SERVICE_ID  : ${EMAILJS_SERVICE_ID  || '⚠️  NOT SET'}`);
+  console.log(`  EMAILJS_TEMPLATE_ID : ${EMAILJS_TEMPLATE_ID || '⚠️  NOT SET'}`);
+  console.log(`  EMAILJS_PUBLIC_KEY  : ${EMAILJS_PUBLIC_KEY  ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  EMAILJS_PRIVATE_KEY : ${EMAILJS_PRIVATE_KEY ? '✅ SET' : '⚠️  NOT SET'}`);
+  console.log(`  OWNER_EMAIL         : ${OWNER_EMAIL         || '⚠️  NOT SET'}`);
   console.log('==================================================\n');
 });
