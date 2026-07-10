@@ -340,9 +340,12 @@ app.post('/api/bookings', async (req, res) => {
       await sendConfirmationEmail(newBooking);
       emailSent = true;
     } catch (err) {
-      emailError = err.message;
+      emailError = err.message || (err.text ? `${err.status}: ${err.text}` : JSON.stringify(err));
       console.error(`[EMAIL] ❌ Customer confirmation FAILED for ${newBooking.email}`);
-      console.error(`        Reason: ${err.message}`);
+      console.error(`        err.message : ${err.message}`);
+      console.error(`        err.status  : ${err.status}`);
+      console.error(`        err.text    : ${err.text}`);
+      console.error('[EMAIL] Full error:', JSON.stringify(err, null, 2));
     }
 
     // ── Send owner notification email (non-fatal) ─────────────
@@ -353,7 +356,10 @@ app.post('/api/bookings', async (req, res) => {
       ownerNotified = true;
     } catch (err) {
       console.error('[EMAIL] ❌ Owner notification FAILED');
-      console.error(`        Reason: ${err.message}`);
+      console.error(`        err.message : ${err.message}`);
+      console.error(`        err.status  : ${err.status}`);
+      console.error(`        err.text    : ${err.text}`);
+      console.error('[EMAIL] Full error:', JSON.stringify(err, null, 2));
     }
 
     // ── Always return 201 — booking always succeeds ───────────
@@ -429,8 +435,12 @@ app.post('/api/bookings/:id/resend-email', async (req, res) => {
     await sendConfirmationEmail(booking);
     return res.json({ message: 'Confirmation email resent successfully.', emailSent: true });
   } catch (err) {
-    console.error('[RESEND] Error:', err.message);
-    return res.status(500).json({ error: err.message || 'Failed to resend email.', emailSent: false });
+    console.error('[RESEND] ❌ Resend email FAILED');
+    console.error(`        err.message : ${err.message}`);
+    console.error(`        err.status  : ${err.status}`);
+    console.error(`        err.text    : ${err.text}`);
+    console.error('[RESEND] Full error:', JSON.stringify(err, null, 2));
+    return res.status(500).json({ error: err.message || err.text || 'Failed to resend email.', emailSent: false });
   }
 });
 
